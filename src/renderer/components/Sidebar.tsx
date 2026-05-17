@@ -1,7 +1,7 @@
 import type { DragEvent } from 'react';
-import { FolderGit2, FolderOpen, Plus, RefreshCw } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { FolderGit2, FolderOpen, Pin, Plus, RefreshCw, Search } from 'lucide-react';
 import { Button } from './ui/button';
-import { Card } from './ui/card';
 import { Input } from './ui/input';
 import type { RegisteredProject } from '../types/project';
 
@@ -36,6 +36,19 @@ export function Sidebar({
   onDragLeave,
   onDrop,
 }: SidebarProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredProjects = useMemo(() => {
+    if (normalizedQuery.length === 0) {
+      return projects;
+    }
+
+    return projects.filter((project) => {
+      return project.name.toLowerCase().includes(normalizedQuery) || project.path.toLowerCase().includes(normalizedQuery);
+    });
+  }, [normalizedQuery, projects]);
+  const pinnedProjects = projects.slice(0, 3);
+
   return (
     <aside
       className="flex min-h-0 flex-col border-r border-border bg-sidebar px-2 py-2"
@@ -44,26 +57,31 @@ export function Sidebar({
       onDrop={onDrop}
     >
       <div className="mb-2 flex items-center gap-2 px-1">
-        <div className="flex size-7 items-center justify-center rounded-md border border-border bg-card">
-          <FolderGit2 className="size-4 text-blue-400" />
+        <div className="flex size-7 items-center justify-center rounded-md border border-border bg-card shadow-none">
+          <FolderGit2 className="size-3.5 text-blue-400" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="truncate text-xs font-semibold">Worktree Manager</div>
           <div className="text-[11px] text-muted-foreground">Local Git projects</div>
         </div>
+        <span className="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+          {projects.length}
+        </span>
       </div>
 
-      <Card className={`mb-2 p-2 ${isDraggingProject ? 'border-blue-500/60 bg-blue-500/10' : ''}`}>
-        <Button type="button" className="mb-2 w-full justify-start" onClick={onBrowse} disabled={isLoading}>
-          <FolderOpen className="size-4" />
-          Add Project
-        </Button>
-        <div className="mb-2 rounded-md border border-dashed border-border px-2 py-3 text-center text-[11px] text-muted-foreground">
-          {isDraggingProject ? 'Drop to register Git project' : 'Drop a project folder here'}
-        </div>
-        <div className="mb-2 text-[11px] font-medium text-muted-foreground">Manual path</div>
+      <div className={`mb-2 rounded-lg border border-border bg-card p-1.5 ${isDraggingProject ? 'border-blue-500/60 bg-blue-500/10' : ''}`}>
         <div className="flex gap-1.5">
+          <Button type="button" className="h-7 flex-1 justify-start" onClick={onBrowse} disabled={isLoading}>
+            <FolderOpen className="size-3.5" />
+            Add Project
+          </Button>
+          <Button type="button" variant="outline" size="icon" className="size-7" onClick={onRegister} disabled={isLoading || projectPath.trim().length === 0}>
+            <Plus className="size-3.5" />
+          </Button>
+        </div>
+        <div className="mt-1.5 grid gap-1">
           <Input
+            className="h-7"
             value={projectPath}
             onChange={(event) => onProjectPathChange(event.currentTarget.value)}
             onKeyDown={(event) => {
@@ -74,14 +92,41 @@ export function Sidebar({
             placeholder="/Users/me/repo"
             spellCheck={false}
           />
-          <Button type="button" size="icon" onClick={onRegister} disabled={isLoading || projectPath.trim().length === 0}>
-            <Plus className="size-4" />
-          </Button>
+          <div className="rounded border border-dashed border-border/80 px-2 py-1 text-center text-[10.5px] text-muted-foreground/80">
+            {isDraggingProject ? 'Drop to register' : 'Drop folder'}
+          </div>
         </div>
-      </Card>
+      </div>
+
+      <div className="relative mb-2">
+        <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/70" />
+        <Input
+          className="h-7 pl-7"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.currentTarget.value)}
+          placeholder="Search projects"
+        />
+      </div>
+
+      {pinnedProjects.length > 0 ? (
+        <div className="mb-2">
+          <SectionHeader label="Pinned" count={pinnedProjects.length} />
+          <div className="space-y-0.5">
+            {pinnedProjects.map((project) => (
+              <ProjectRow
+                key={`pinned:${project.path}`}
+                project={project}
+                active={activeProject?.path === project.path}
+                pinned
+                onSelect={onSelect}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="mb-1 flex items-center justify-between px-1">
-        <span className="text-[11px] font-semibold uppercase text-muted-foreground">Projects</span>
+        <SectionHeader label="Recent" count={filteredProjects.length} />
         <Button type="button" variant="ghost" size="icon" onClick={onRefresh} disabled={activeProject === null || isLoading}>
           <RefreshCw className="size-3.5" />
         </Button>
@@ -92,24 +137,62 @@ export function Sidebar({
           <div className="rounded-md border border-dashed border-border px-2 py-4 text-center text-xs text-muted-foreground">
             No projects registered
           </div>
+        ) : filteredProjects.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border px-2 py-4 text-center text-xs text-muted-foreground">
+            No matching projects
+          </div>
         ) : (
-          projects.map((project) => (
-            <button
+          filteredProjects.map((project) => (
+            <ProjectRow
               key={project.path}
-              type="button"
-              onClick={() => onSelect(project)}
-              className={`w-full rounded-md border px-2 py-2 text-left text-xs transition-colors ${
-                activeProject?.path === project.path
-                  ? 'border-blue-500/40 bg-blue-500/10 text-foreground'
-                  : 'border-transparent text-muted-foreground hover:bg-accent hover:text-foreground'
-              }`}
-            >
-              <span className="block truncate font-medium">{project.name}</span>
-              <span className="mt-0.5 block truncate font-mono text-[10px] opacity-70">{project.path}</span>
-            </button>
+              project={project}
+              active={activeProject?.path === project.path}
+              onSelect={onSelect}
+            />
           ))
         )}
       </div>
     </aside>
+  );
+}
+
+function SectionHeader({ label, count }: { label: string; count: number }) {
+  return (
+    <div className="flex items-center gap-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <span>{label}</span>
+      <span className="font-mono text-[10px] text-muted-foreground/70">{count}</span>
+    </div>
+  );
+}
+
+function ProjectRow({
+  project,
+  active,
+  pinned = false,
+  onSelect,
+}: {
+  project: RegisteredProject;
+  active: boolean;
+  pinned?: boolean;
+  onSelect(project: RegisteredProject): void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(project)}
+      className={`group flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-left text-xs transition-[background-color,border-color,color] duration-150 ${
+        active
+          ? 'border-blue-500/45 bg-blue-500/10 text-foreground shadow-[inset_2px_0_0_rgb(96_165_250)]'
+          : 'border-transparent text-muted-foreground hover:border-border hover:bg-accent/45 hover:text-foreground'
+      }`}
+    >
+      <span className="flex size-5 shrink-0 items-center justify-center rounded border border-border bg-background text-muted-foreground group-hover:text-foreground">
+        {pinned ? <Pin className="size-3" /> : <FolderGit2 className="size-3" />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[12px] font-medium leading-4">{project.name}</span>
+        <span className="block truncate font-mono text-[10px] leading-3 opacity-65">{project.path}</span>
+      </span>
+    </button>
   );
 }
