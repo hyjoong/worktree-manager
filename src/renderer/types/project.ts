@@ -1,4 +1,3 @@
-export type RegisteredProject = {
-  name: string;
-  path: string;
-};
+import type { RegisteredProjectInfo } from '../../shared/ipc';
+
+export type RegisteredProject = RegisteredProjectInfo;

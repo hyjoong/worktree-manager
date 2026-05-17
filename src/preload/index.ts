@@ -5,6 +5,7 @@ import {
   listWorktreesInputSchema,
   openWorktreeInputSchema,
   removeWorktreeInputSchema,
+  saveProjectsInputSchema,
   validateProjectInputSchema,
   type WorktreeApi,
 } from '../shared/ipc';
@@ -32,6 +33,13 @@ const worktreeApi: WorktreeApi = {
   validateProject(input) {
     const parsed = validateProjectInputSchema.parse(input);
     return ipcRenderer.invoke(ipcChannels.validateProject, parsed);
+  },
+  loadProjects() {
+    return ipcRenderer.invoke(ipcChannels.loadProjects);
+  },
+  saveProjects(input) {
+    const parsed = saveProjectsInputSchema.parse(input);
+    return ipcRenderer.invoke(ipcChannels.saveProjects, parsed);
   },
   getDroppedFilePath(file) {
     const path = webUtils.getPathForFile(file);

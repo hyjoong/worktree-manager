@@ -1,4 +1,4 @@
-import { DragEvent, useMemo, useState } from 'react';
+import { DragEvent, useEffect, useMemo, useState } from 'react';
 import { CircleAlert, GitBranch, GitBranchPlus, RefreshCw } from 'lucide-react';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { CreateWorktreeDialog } from './components/CreateWorktreeDialog';
@@ -15,14 +15,14 @@ import { Card, CardContent } from './components/ui/card';
 import { useAppLog } from './hooks/use-app-log';
 import { useWorktreeApi } from './hooks/use-worktree-api';
 import { useEditorStore } from './stores/editor-store';
-import { createRegisteredProject, loadStoredProjects, saveStoredProjects, upsertRecentProject } from './stores/project-store';
+import { createRegisteredProject, upsertRecentProject } from './stores/project-store';
 import { useToastStore } from './stores/toast-store';
 import type { RegisteredProject } from './types/project';
 import type { EditorId, WorktreeInfo } from '../shared/ipc';
 
 export function App() {
   const [projectPath, setProjectPath] = useState('');
-  const [projects, setProjects] = useState<RegisteredProject[]>(() => loadStoredProjects());
+  const [projects, setProjects] = useState<RegisteredProject[]>([]);
   const [activeProject, setActiveProject] = useState<RegisteredProject | null>(null);
   const [worktrees, setWorktrees] = useState<WorktreeInfo[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
@@ -46,6 +46,44 @@ export function App() {
     [selectedPath, worktrees],
   );
 
+  useEffect(() => {
+    const api = readWorktreeApi();
+
+    if (api === null) {
+      return;
+    }
+
+    void (async () => {
+      appendLog('$ load registered projects');
+      const result = await api.loadProjects();
+
+      if (result.ok) {
+        setProjects(result.projects);
+        appendLog(`loaded ${result.projects.length} registered projects`);
+      } else {
+        setError(result.error);
+        appendLog(`error: ${result.error}`);
+        toast({ tone: 'error', title: 'Failed to load projects', description: result.error });
+      }
+    })();
+  }, []);
+
+  function persistProjects(nextProjects: RegisteredProject[]) {
+    const api = readWorktreeApi();
+
+    if (api === null) {
+      return;
+    }
+
+    void api.saveProjects({ projects: nextProjects }).then((result) => {
+      if (!result.ok) {
+        setError(result.error);
+        appendLog(`error: ${result.error}`);
+        toast({ tone: 'error', title: 'Failed to save projects', description: result.error });
+      }
+    });
+  }
+
   async function loadWorktrees(project: RegisteredProject, options: { registerProject?: boolean } = {}) {
     setIsLoading(true);
     setError(null);
@@ -68,7 +106,7 @@ export function App() {
         if (options.registerProject === true) {
           setProjects((current) => {
             const nextProjects = upsertRecentProject(current, project);
-            saveStoredProjects(nextProjects);
+            persistProjects(nextProjects);
             return nextProjects;
           });
         }

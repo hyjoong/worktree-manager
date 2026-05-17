@@ -6,11 +6,13 @@ import {
   listWorktreesInputSchema,
   openWorktreeInputSchema,
   removeWorktreeInputSchema,
+  saveProjectsInputSchema,
   validateProjectInputSchema,
   type SelectProjectDirectoryResult,
 } from '../shared/ipc';
 import { createWorktree, listWorktrees, openWorktree, removeWorktree, validateProjectPath } from './git/worktree';
 import { handleValidatedIpc } from './ipc/handle';
+import { loadProjects, saveProjects } from './settings/projects';
 
 const isDev = process.env.VITE_DEV_SERVER_URL !== undefined;
 
@@ -89,6 +91,25 @@ handleValidatedIpc(ipcChannels.validateProject, validateProjectInputSchema, asyn
     ok: true,
     rootPath: await validateProjectPath(input.projectPath),
   };
+});
+
+ipcMain.handle(ipcChannels.loadProjects, async () => {
+  try {
+    return {
+      ok: true,
+      projects: await loadProjects(),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Failed to load projects',
+    };
+  }
+});
+
+handleValidatedIpc(ipcChannels.saveProjects, saveProjectsInputSchema, async (input) => {
+  await saveProjects(input.projects);
+  return { ok: true };
 });
 
 app.whenReady().then(() => {

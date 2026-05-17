@@ -7,6 +7,8 @@ export const ipcChannels = {
   createWorktree: 'git:create-worktree',
   selectProjectDirectory: 'dialog:select-project-directory',
   validateProject: 'git:validate-project',
+  loadProjects: 'settings:load-projects',
+  saveProjects: 'settings:save-projects',
 } as const;
 
 export const listWorktreesInputSchema = z.object({
@@ -33,11 +35,22 @@ export const validateProjectInputSchema = z.object({
   projectPath: z.string().trim().min(1, 'Project path is required'),
 });
 
+export const registeredProjectSchema = z.object({
+  name: z.string().trim().min(1),
+  path: z.string().trim().min(1),
+});
+
+export const saveProjectsInputSchema = z.object({
+  projects: z.array(registeredProjectSchema),
+});
+
 export type ListWorktreesInput = z.infer<typeof listWorktreesInputSchema>;
 export type OpenWorktreeInput = z.infer<typeof openWorktreeInputSchema>;
 export type RemoveWorktreeInput = z.infer<typeof removeWorktreeInputSchema>;
 export type CreateWorktreeInput = z.infer<typeof createWorktreeInputSchema>;
 export type ValidateProjectInput = z.infer<typeof validateProjectInputSchema>;
+export type RegisteredProjectInfo = z.infer<typeof registeredProjectSchema>;
+export type SaveProjectsInput = z.infer<typeof saveProjectsInputSchema>;
 export type EditorId = OpenWorktreeInput['editor'];
 
 export type WorktreeStatus = 'clean' | 'dirty' | 'bare' | 'detached';
@@ -99,6 +112,16 @@ export type ValidateProjectResult =
       error: string;
     };
 
+export type LoadProjectsResult =
+  | {
+      ok: true;
+      projects: RegisteredProjectInfo[];
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
 export type WorktreeApi = {
   listWorktrees(input: ListWorktreesInput): Promise<ListWorktreesResult>;
   openWorktree(input: OpenWorktreeInput): Promise<MutationResult>;
@@ -106,5 +129,7 @@ export type WorktreeApi = {
   createWorktree(input: CreateWorktreeInput): Promise<MutationResult>;
   selectProjectDirectory(): Promise<SelectProjectDirectoryResult>;
   validateProject(input: ValidateProjectInput): Promise<ValidateProjectResult>;
+  loadProjects(): Promise<LoadProjectsResult>;
+  saveProjects(input: SaveProjectsInput): Promise<MutationResult>;
   getDroppedFilePath(file: File): string | null;
 };
