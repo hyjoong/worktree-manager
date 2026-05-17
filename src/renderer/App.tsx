@@ -70,29 +70,38 @@ export function App() {
       return;
     }
 
-    const result = await api.listWorktrees({ projectPath: project.path });
+    try {
+      const result = await api.listWorktrees({ projectPath: project.path });
 
-    if (result.ok) {
-      setActiveProject(project);
-      setWorktrees(result.worktrees);
-      setSelectedPath(result.worktrees[0]?.path ?? null);
-      if (options.registerProject === true) {
-        setProjects((current) => {
-          const nextProjects = upsertRecentProject(current, project);
-          saveStoredProjects(nextProjects);
-          return nextProjects;
-        });
+      if (result.ok) {
+        setActiveProject(project);
+        setWorktrees(result.worktrees);
+        setSelectedPath(result.worktrees[0]?.path ?? null);
+        if (options.registerProject === true) {
+          setProjects((current) => {
+            const nextProjects = upsertRecentProject(current, project);
+            saveStoredProjects(nextProjects);
+            return nextProjects;
+          });
+        }
+        appendLog(`listed ${result.worktrees.length} worktrees`);
+      } else {
+        setWorktrees([]);
+        setSelectedPath(null);
+        setError(result.error);
+        appendLog(`error: ${result.error}`);
+        toast({ tone: 'error', title: 'Failed to list worktrees', description: result.error });
       }
-      appendLog(`listed ${result.worktrees.length} worktrees`);
-    } else {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to list worktrees';
       setWorktrees([]);
       setSelectedPath(null);
-      setError(result.error);
-      appendLog(`error: ${result.error}`);
-      toast({ tone: 'error', title: 'Failed to list worktrees', description: result.error });
+      setError(message);
+      appendLog(`error: ${message}`);
+      toast({ tone: 'error', title: 'Failed to list worktrees', description: message });
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   }
 
   function registerProject() {
@@ -111,25 +120,37 @@ export function App() {
       return;
     }
 
+    setIsLoading(true);
     appendLog(`$ git -C ${path} rev-parse --show-toplevel`);
     const api = readWorktreeApi();
 
     if (api === null) {
+      setIsLoading(false);
       return;
     }
 
-    const validation = await api.validateProject({ projectPath: path });
+    try {
+      const validation = await api.validateProject({ projectPath: path });
 
-    if (!validation.ok) {
-      setError(validation.error);
-      appendLog(`error: ${validation.error}`);
-      toast({ tone: 'error', title: 'Invalid Git project', description: validation.error });
-      return;
+      if (!validation.ok) {
+        setError(validation.error);
+        appendLog(`error: ${validation.error}`);
+        toast({ tone: 'error', title: 'Invalid Git project', description: validation.error });
+        return;
+      }
+
+      const project = createRegisteredProject(validation.rootPath);
+      setIsLoading(false);
+      await loadWorktrees(project, { registerProject: true });
+      setProjectPath('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to validate project';
+      setError(message);
+      appendLog(`error: ${message}`);
+      toast({ tone: 'error', title: 'Failed to validate project', description: message });
+    } finally {
+      setIsLoading(false);
     }
-
-    const project = createRegisteredProject(validation.rootPath);
-    await loadWorktrees(project, { registerProject: true });
-    setProjectPath('');
   }
 
   function extractDroppedPath(event: DragEvent<HTMLElement>) {
