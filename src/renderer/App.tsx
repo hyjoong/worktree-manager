@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { DragEvent, useMemo, useState } from 'react';
 import { CircleAlert, GitBranch, RefreshCw } from 'lucide-react';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { DetailsPanel } from './components/DetailsPanel';
@@ -27,6 +27,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDraggingProject, setIsDraggingProject] = useState(false);
   const { editor, setEditor } = useEditorStore();
   const toast = useToastStore((state) => state.push);
 
@@ -87,6 +88,10 @@ export function App() {
   }
 
   async function registerProjectPath(path: string) {
+    if (isLoading) {
+      return;
+    }
+
     appendLog(`$ git -C ${path} rev-parse --show-toplevel`);
     const validation = await window.worktreeApi.validateProject({ projectPath: path });
 
@@ -100,6 +105,46 @@ export function App() {
     const project = createRegisteredProject(validation.rootPath);
     await loadWorktrees(project, { registerProject: true });
     setProjectPath('');
+  }
+
+  function extractDroppedPath(event: DragEvent<HTMLElement>) {
+    const file = event.dataTransfer.files.item(0);
+
+    if (file === null) {
+      return null;
+    }
+
+    return window.worktreeApi.getDroppedFilePath(file);
+  }
+
+  function handleDragOver(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    setIsDraggingProject(true);
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLElement>) {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
+
+    setIsDraggingProject(false);
+  }
+
+  function handleDrop(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    setIsDraggingProject(false);
+
+    const path = extractDroppedPath(event);
+
+    if (path === null) {
+      setError('Drop a local project folder from Finder.');
+      toast({ tone: 'error', title: 'Could not read dropped folder', description: 'Drop a folder from Finder into the app.' });
+      return;
+    }
+
+    setProjectPath(path);
+    void registerProjectPath(path);
   }
 
   async function browseProjectDirectory() {
@@ -164,9 +209,13 @@ export function App() {
             void loadWorktrees(activeProject);
           }
         }}
+        isDraggingProject={isDraggingProject}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       />
 
-      <section className="min-h-0 bg-workspace">
+      <section className="min-h-0 bg-workspace" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
         <header className="flex h-12 items-center justify-between border-b border-border px-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -211,7 +260,12 @@ export function App() {
           {isLoading ? <WorktreeSkeleton /> : null}
 
           {!isLoading && activeProject === null ? (
-            <EmptyState title="No project registered" description="Add a local Git repository path to inspect its worktrees." />
+            <EmptyState
+              title="Add a project folder"
+              description="Click Add Project in the sidebar or drag a Git repository folder here."
+              isDragging={isDraggingProject}
+              onBrowse={() => void browseProjectDirectory()}
+            />
           ) : null}
 
           {!isLoading && activeProject !== null && worktrees.length === 0 ? (
@@ -258,12 +312,27 @@ export function App() {
   );
 }
 
-function EmptyState({ title, description }: { title: string; description: string }) {
+function EmptyState({
+  title,
+  description,
+  isDragging = false,
+  onBrowse,
+}: {
+  title: string;
+  description: string;
+  isDragging?: boolean;
+  onBrowse?: () => void;
+}) {
   return (
-    <Card className="flex min-h-[320px] items-center justify-center border-dashed">
+    <Card className={`flex min-h-[320px] items-center justify-center border-dashed ${isDragging ? 'border-blue-500/60 bg-blue-500/10' : ''}`}>
       <CardContent className="text-center">
         <div className="text-sm font-semibold">{title}</div>
         <div className="mt-1 text-xs text-muted-foreground">{description}</div>
+        {onBrowse !== undefined ? (
+          <Button type="button" className="mt-4" onClick={onBrowse}>
+            Add Project
+          </Button>
+        ) : null}
       </CardContent>
     </Card>
   );

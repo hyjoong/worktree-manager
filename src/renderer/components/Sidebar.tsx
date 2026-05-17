@@ -1,4 +1,5 @@
-import { FolderGit2, FolderOpen, Plus, RefreshCw, Search } from 'lucide-react';
+import type { DragEvent } from 'react';
+import { FolderGit2, FolderOpen, Plus, RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
@@ -14,6 +15,10 @@ type SidebarProps = {
   onBrowse(): void;
   onSelect(project: RegisteredProject): void;
   onRefresh(): void;
+  isDraggingProject: boolean;
+  onDragOver(event: DragEvent<HTMLElement>): void;
+  onDragLeave(event: DragEvent<HTMLElement>): void;
+  onDrop(event: DragEvent<HTMLElement>): void;
 };
 
 export function Sidebar({
@@ -26,9 +31,18 @@ export function Sidebar({
   onBrowse,
   onSelect,
   onRefresh,
+  isDraggingProject,
+  onDragOver,
+  onDragLeave,
+  onDrop,
 }: SidebarProps) {
   return (
-    <aside className="flex min-h-0 flex-col border-r border-border bg-sidebar px-2 py-2">
+    <aside
+      className="flex min-h-0 flex-col border-r border-border bg-sidebar px-2 py-2"
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       <div className="mb-2 flex items-center gap-2 px-1">
         <div className="flex size-7 items-center justify-center rounded-md border border-border bg-card">
           <FolderGit2 className="size-4 text-blue-400" />
@@ -39,11 +53,15 @@ export function Sidebar({
         </div>
       </div>
 
-      <Card className="mb-2 p-2">
-        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-          <Search className="size-3.5" />
-          Register path
+      <Card className={`mb-2 p-2 ${isDraggingProject ? 'border-blue-500/60 bg-blue-500/10' : ''}`}>
+        <Button type="button" className="mb-2 w-full justify-start" onClick={onBrowse} disabled={isLoading}>
+          <FolderOpen className="size-4" />
+          Add Project
+        </Button>
+        <div className="mb-2 rounded-md border border-dashed border-border px-2 py-3 text-center text-[11px] text-muted-foreground">
+          {isDraggingProject ? 'Drop to register Git project' : 'Drop a project folder here'}
         </div>
+        <div className="mb-2 text-[11px] font-medium text-muted-foreground">Manual path</div>
         <div className="flex gap-1.5">
           <Input
             value={projectPath}
@@ -56,9 +74,6 @@ export function Sidebar({
             placeholder="/Users/me/repo"
             spellCheck={false}
           />
-          <Button type="button" variant="outline" size="icon" onClick={onBrowse} disabled={isLoading} title="Browse folder">
-            <FolderOpen className="size-4" />
-          </Button>
           <Button type="button" size="icon" onClick={onRegister} disabled={isLoading || projectPath.trim().length === 0}>
             <Plus className="size-4" />
           </Button>

@@ -97,4 +97,5 @@ export type WorktreeApi = {
   removeWorktree(input: RemoveWorktreeInput): Promise<MutationResult>;
   selectProjectDirectory(): Promise<SelectProjectDirectoryResult>;
   validateProject(input: ValidateProjectInput): Promise<ValidateProjectResult>;
+  getDroppedFilePath(file: File): string | null;
 };

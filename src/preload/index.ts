@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import {
   ipcChannels,
   listWorktreesInputSchema,
@@ -27,6 +27,10 @@ const worktreeApi: WorktreeApi = {
   validateProject(input) {
     const parsed = validateProjectInputSchema.parse(input);
     return ipcRenderer.invoke(ipcChannels.validateProject, parsed);
+  },
+  getDroppedFilePath(file) {
+    const path = webUtils.getPathForFile(file);
+    return path.length > 0 ? path : null;
   },
 };
 
