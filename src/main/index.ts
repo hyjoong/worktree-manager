@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, type OpenDialogOptions } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent, type OpenDialogOptions } from 'electron';
 import { join } from 'node:path';
 import {
   createWorktreeInputSchema,
@@ -7,12 +7,10 @@ import {
   openWorktreeInputSchema,
   removeWorktreeInputSchema,
   validateProjectInputSchema,
-  type ListWorktreesResult,
-  type MutationResult,
   type SelectProjectDirectoryResult,
-  type ValidateProjectResult,
 } from '../shared/ipc';
 import { createWorktree, listWorktrees, openWorktree, removeWorktree, validateProjectPath } from './git/worktree';
+import { handleValidatedIpc } from './ipc/handle';
 
 const isDev = process.env.VITE_DEV_SERVER_URL !== undefined;
 
@@ -39,94 +37,29 @@ function createWindow() {
   }
 }
 
-ipcMain.handle(ipcChannels.listWorktrees, async (_event, input: unknown): Promise<ListWorktreesResult> => {
-  const parsed = listWorktreesInputSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.issues.map((issue) => issue.message).join(', '),
-    };
-  }
-
-  try {
-    return {
-      ok: true,
-      worktrees: await listWorktrees(parsed.data.projectPath),
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to list worktrees';
-    return {
-      ok: false,
-      error: message,
-    };
-  }
+handleValidatedIpc(ipcChannels.listWorktrees, listWorktreesInputSchema, async (input) => {
+  return {
+    ok: true,
+    worktrees: await listWorktrees(input.projectPath),
+  };
 });
 
-ipcMain.handle(ipcChannels.openWorktree, async (_event, input: unknown): Promise<MutationResult> => {
-  const parsed = openWorktreeInputSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.issues.map((issue) => issue.message).join(', '),
-    };
-  }
-
-  try {
-    await openWorktree(parsed.data);
-    return { ok: true };
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : 'Failed to open worktree',
-    };
-  }
+handleValidatedIpc(ipcChannels.openWorktree, openWorktreeInputSchema, async (input) => {
+  await openWorktree(input);
+  return { ok: true };
 });
 
-ipcMain.handle(ipcChannels.removeWorktree, async (_event, input: unknown): Promise<MutationResult> => {
-  const parsed = removeWorktreeInputSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.issues.map((issue) => issue.message).join(', '),
-    };
-  }
-
-  try {
-    await removeWorktree(parsed.data.projectPath, parsed.data.path);
-    return { ok: true };
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : 'Failed to remove worktree',
-    };
-  }
+handleValidatedIpc(ipcChannels.removeWorktree, removeWorktreeInputSchema, async (input) => {
+  await removeWorktree(input.projectPath, input.path);
+  return { ok: true };
 });
 
-ipcMain.handle(ipcChannels.createWorktree, async (_event, input: unknown): Promise<MutationResult> => {
-  const parsed = createWorktreeInputSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.issues.map((issue) => issue.message).join(', '),
-    };
-  }
-
-  try {
-    await createWorktree(parsed.data);
-    return { ok: true };
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : 'Failed to create worktree',
-    };
-  }
+handleValidatedIpc(ipcChannels.createWorktree, createWorktreeInputSchema, async (input) => {
+  await createWorktree(input);
+  return { ok: true };
 });
 
-ipcMain.handle(ipcChannels.selectProjectDirectory, async (event): Promise<SelectProjectDirectoryResult> => {
+ipcMain.handle(ipcChannels.selectProjectDirectory, async (event: IpcMainInvokeEvent): Promise<SelectProjectDirectoryResult> => {
   try {
     const parentWindow = BrowserWindow.fromWebContents(event.sender);
     const dialogOptions: OpenDialogOptions = {
@@ -151,27 +84,11 @@ ipcMain.handle(ipcChannels.selectProjectDirectory, async (event): Promise<Select
   }
 });
 
-ipcMain.handle(ipcChannels.validateProject, async (_event, input: unknown): Promise<ValidateProjectResult> => {
-  const parsed = validateProjectInputSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.issues.map((issue) => issue.message).join(', '),
-    };
-  }
-
-  try {
-    return {
-      ok: true,
-      rootPath: await validateProjectPath(parsed.data.projectPath),
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : 'Selected folder is not a Git repository',
-    };
-  }
+handleValidatedIpc(ipcChannels.validateProject, validateProjectInputSchema, async (input) => {
+  return {
+    ok: true,
+    rootPath: await validateProjectPath(input.projectPath),
+  };
 });
 
 app.whenReady().then(() => {
