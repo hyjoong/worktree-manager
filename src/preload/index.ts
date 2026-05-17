@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import {
+  createWorktreeInputSchema,
   ipcChannels,
   listWorktreesInputSchema,
   openWorktreeInputSchema,
@@ -20,6 +21,10 @@ const worktreeApi: WorktreeApi = {
   removeWorktree(input) {
     const parsed = removeWorktreeInputSchema.parse(input);
     return ipcRenderer.invoke(ipcChannels.removeWorktree, parsed);
+  },
+  createWorktree(input) {
+    const parsed = createWorktreeInputSchema.parse(input);
+    return ipcRenderer.invoke(ipcChannels.createWorktree, parsed);
   },
   selectProjectDirectory() {
     return ipcRenderer.invoke(ipcChannels.selectProjectDirectory);

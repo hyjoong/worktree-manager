@@ -1,5 +1,5 @@
 import { execa } from 'execa';
-import type { CommitSummary, OpenWorktreeInput, WorktreeInfo, WorktreeStatus } from '../../shared/ipc';
+import type { CommitSummary, CreateWorktreeInput, OpenWorktreeInput, WorktreeInfo, WorktreeStatus } from '../../shared/ipc';
 
 type MutableWorktree = {
   path: string;
@@ -124,6 +124,10 @@ export async function removeWorktree(projectPath: string, worktreePath: string):
   }
 
   await execa('git', ['-C', projectPath, 'worktree', 'remove', worktreePath]);
+}
+
+export async function createWorktree(input: CreateWorktreeInput): Promise<void> {
+  await execa('git', ['-C', input.projectPath, 'worktree', 'add', '-b', input.branch, input.path]);
 }
 
 async function readDirtyStatus(path: string): Promise<boolean> {

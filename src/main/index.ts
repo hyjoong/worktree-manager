@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, type OpenDialogOptions } from 'electron';
 import { join } from 'node:path';
 import {
+  createWorktreeInputSchema,
   ipcChannels,
   listWorktreesInputSchema,
   openWorktreeInputSchema,
@@ -11,7 +12,7 @@ import {
   type SelectProjectDirectoryResult,
   type ValidateProjectResult,
 } from '../shared/ipc';
-import { listWorktrees, openWorktree, removeWorktree, validateProjectPath } from './git/worktree';
+import { createWorktree, listWorktrees, openWorktree, removeWorktree, validateProjectPath } from './git/worktree';
 
 const isDev = process.env.VITE_DEV_SERVER_URL !== undefined;
 
@@ -100,6 +101,27 @@ ipcMain.handle(ipcChannels.removeWorktree, async (_event, input: unknown): Promi
     return {
       ok: false,
       error: error instanceof Error ? error.message : 'Failed to remove worktree',
+    };
+  }
+});
+
+ipcMain.handle(ipcChannels.createWorktree, async (_event, input: unknown): Promise<MutationResult> => {
+  const parsed = createWorktreeInputSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues.map((issue) => issue.message).join(', '),
+    };
+  }
+
+  try {
+    await createWorktree(parsed.data);
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Failed to create worktree',
     };
   }
 });

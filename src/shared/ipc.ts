@@ -4,6 +4,7 @@ export const ipcChannels = {
   listWorktrees: 'git:list-worktrees',
   openWorktree: 'git:open-worktree',
   removeWorktree: 'git:remove-worktree',
+  createWorktree: 'git:create-worktree',
   selectProjectDirectory: 'dialog:select-project-directory',
   validateProject: 'git:validate-project',
 } as const;
@@ -22,6 +23,12 @@ export const removeWorktreeInputSchema = z.object({
   path: z.string().trim().min(1, 'Worktree path is required'),
 });
 
+export const createWorktreeInputSchema = z.object({
+  projectPath: z.string().trim().min(1, 'Project path is required'),
+  path: z.string().trim().min(1, 'Worktree path is required'),
+  branch: z.string().trim().min(1, 'Branch name is required'),
+});
+
 export const validateProjectInputSchema = z.object({
   projectPath: z.string().trim().min(1, 'Project path is required'),
 });
@@ -29,6 +36,7 @@ export const validateProjectInputSchema = z.object({
 export type ListWorktreesInput = z.infer<typeof listWorktreesInputSchema>;
 export type OpenWorktreeInput = z.infer<typeof openWorktreeInputSchema>;
 export type RemoveWorktreeInput = z.infer<typeof removeWorktreeInputSchema>;
+export type CreateWorktreeInput = z.infer<typeof createWorktreeInputSchema>;
 export type ValidateProjectInput = z.infer<typeof validateProjectInputSchema>;
 export type EditorId = OpenWorktreeInput['editor'];
 
@@ -95,6 +103,7 @@ export type WorktreeApi = {
   listWorktrees(input: ListWorktreesInput): Promise<ListWorktreesResult>;
   openWorktree(input: OpenWorktreeInput): Promise<MutationResult>;
   removeWorktree(input: RemoveWorktreeInput): Promise<MutationResult>;
+  createWorktree(input: CreateWorktreeInput): Promise<MutationResult>;
   selectProjectDirectory(): Promise<SelectProjectDirectoryResult>;
   validateProject(input: ValidateProjectInput): Promise<ValidateProjectResult>;
   getDroppedFilePath(file: File): string | null;

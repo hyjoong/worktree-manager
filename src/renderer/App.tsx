@@ -1,6 +1,7 @@
 import { DragEvent, useMemo, useState } from 'react';
-import { CircleAlert, GitBranch, RefreshCw } from 'lucide-react';
+import { CircleAlert, GitBranch, GitBranchPlus, RefreshCw } from 'lucide-react';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import { CreateWorktreeDialog } from './components/CreateWorktreeDialog';
 import { DetailsPanel } from './components/DetailsPanel';
 import { EditorSelector } from './components/EditorSelector';
 import { LogConsole } from './components/LogConsole';
@@ -24,6 +25,9 @@ export function App() {
   const [worktrees, setWorktrees] = useState<WorktreeInfo[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [pendingRemove, setPendingRemove] = useState<WorktreeInfo | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newBranch, setNewBranch] = useState('');
+  const [newWorktreePath, setNewWorktreePath] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -269,6 +273,43 @@ export function App() {
     }
   }
 
+  async function createNewWorktree() {
+    if (activeProject === null) {
+      return;
+    }
+
+    const branch = newBranch.trim();
+    const path = newWorktreePath.trim();
+
+    if (branch.length === 0 || path.length === 0) {
+      setError('Branch name and worktree path are required.');
+      return;
+    }
+
+    appendLog(`$ git -C ${activeProject.path} worktree add -b ${branch} ${path}`);
+    const api = readWorktreeApi();
+
+    if (api === null) {
+      return;
+    }
+
+    setIsLoading(true);
+    const result = await api.createWorktree({ projectPath: activeProject.path, branch, path });
+    setIsLoading(false);
+
+    if (result.ok) {
+      setIsCreateOpen(false);
+      setNewBranch('');
+      setNewWorktreePath('');
+      toast({ tone: 'success', title: 'Worktree created', description: branch });
+      await loadWorktrees(activeProject);
+    } else {
+      setError(result.error);
+      appendLog(`error: ${result.error}`);
+      toast({ tone: 'error', title: 'Failed to create worktree', description: result.error });
+    }
+  }
+
   return (
     <main className="grid h-screen min-h-[640px] grid-cols-[260px_minmax(480px,1fr)_320px] grid-rows-[1fr_137px] overflow-hidden bg-background text-foreground">
       <Sidebar
@@ -317,6 +358,10 @@ export function App() {
               title="Refresh worktrees"
             >
               <RefreshCw className="size-4" />
+            </Button>
+            <Button type="button" variant="outline" disabled={activeProject === null || isLoading} onClick={() => setIsCreateOpen(true)}>
+              <GitBranchPlus className="size-4" />
+              New Worktree
             </Button>
             <EditorSelector editor={editor} onChange={setEditor} />
             <ThemeToggle />
@@ -382,6 +427,16 @@ export function App() {
         description={`This will run git worktree remove for ${pendingRemove?.path ?? 'the selected worktree'}. Uncommitted changes can make Git reject the operation.`}
         confirmLabel="Remove"
         onConfirm={() => void removePendingWorktree()}
+      />
+      <CreateWorktreeDialog
+        open={isCreateOpen}
+        branch={newBranch}
+        path={newWorktreePath}
+        isLoading={isLoading}
+        onOpenChange={setIsCreateOpen}
+        onBranchChange={setNewBranch}
+        onPathChange={setNewWorktreePath}
+        onCreate={() => void createNewWorktree()}
       />
       <ToastHost />
     </main>
