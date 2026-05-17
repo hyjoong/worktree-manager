@@ -390,7 +390,7 @@ export function App() {
           </div>
         </header>
 
-        <div className="h-[calc(100%-3rem)] overflow-auto p-2">
+        <div className="h-[calc(100%-3rem)] overflow-auto p-1.5">
           {error !== null ? (
             <Card className="mb-2 border-destructive/35 bg-destructive/10">
               <CardContent className="flex items-start gap-2 p-3 text-xs text-destructive">
@@ -416,7 +416,7 @@ export function App() {
           ) : null}
 
           {!isLoading && worktrees.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {worktrees.map((worktree) => (
                 <WorktreeCard
                   key={`${worktree.path}:${worktree.head ?? 'no-head'}`}

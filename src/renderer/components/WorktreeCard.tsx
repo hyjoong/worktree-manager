@@ -16,19 +16,21 @@ type WorktreeCardProps = {
 export function WorktreeCard({ worktree, selected, editor, onSelect, onOpen, onRemove }: WorktreeCardProps) {
   return (
     <Card
-      className={`cursor-default transition-colors ${
-        selected ? 'border-blue-500/45 bg-blue-500/10' : 'hover:border-zinc-500/45 hover:bg-accent/45'
+      className={`group relative cursor-default overflow-hidden shadow-none transition-[background-color,border-color,box-shadow,transform] duration-150 ${
+        selected
+          ? 'border-blue-500/55 bg-blue-500/[0.075] shadow-[inset_3px_0_0_rgb(96_165_250)]'
+          : 'hover:border-zinc-500/55 hover:bg-accent/35 hover:shadow-[inset_3px_0_0_rgb(113_113_122_/_0.28)]'
       }`}
       onClick={() => onSelect(worktree)}
     >
-      <CardHeader className="py-2">
+      <CardHeader className="px-2.5 py-2">
         <div className="min-w-0">
-          <div className="flex min-w-0 items-center gap-2">
-            <GitBranch className="size-3.5 shrink-0 text-blue-400" />
-            <h3 className="truncate text-sm font-semibold">{formatBranch(worktree)}</h3>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <GitBranch className={`size-3.5 shrink-0 ${selected ? 'text-blue-300' : 'text-blue-400/80'}`} />
+            <h3 className="truncate text-[13px] font-semibold leading-5 tracking-normal">{formatBranch(worktree)}</h3>
             <Badge variant={badgeVariant(worktree)}>{worktree.status}</Badge>
           </div>
-          <div className="mt-1 truncate font-mono text-[11px] text-muted-foreground">{worktree.path}</div>
+          <div className="mt-0.5 truncate font-mono text-[10.5px] leading-4 text-muted-foreground">{worktree.path}</div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <Button
@@ -58,13 +60,13 @@ export function WorktreeCard({ worktree, selected, editor, onSelect, onOpen, onR
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="grid grid-cols-[110px_1fr_72px] gap-3 py-2 text-xs">
+      <CardContent className="grid grid-cols-[82px_1fr_74px] gap-2.5 px-2.5 py-1.5 text-xs">
         <Meta label="Dirty" value={worktree.isDirty ? 'Yes' : 'No'} tone={worktree.isDirty ? 'warn' : 'ok'} />
         <div className="min-w-0">
-          <div className="mb-1 text-[10px] uppercase text-muted-foreground">Last commit</div>
-          <div className="flex min-w-0 items-center gap-1.5">
-            <GitCommitHorizontal className="size-3.5 shrink-0 text-muted-foreground" />
-            <span className="truncate font-mono text-[11px] text-muted-foreground">
+          <div className="mb-0.5 text-[9.5px] font-medium uppercase text-muted-foreground/80">Last commit</div>
+          <div className="flex min-w-0 items-center gap-1">
+            <GitCommitHorizontal className="size-3.5 shrink-0 text-muted-foreground/70" />
+            <span className="truncate font-mono text-[10.5px] text-muted-foreground">
               {worktree.lastCommit !== null
                 ? `${worktree.lastCommit.hash} ${worktree.lastCommit.subject}`
                 : 'No commit metadata'}
@@ -72,8 +74,8 @@ export function WorktreeCard({ worktree, selected, editor, onSelect, onOpen, onR
           </div>
         </div>
         <div className="min-w-0 text-right">
-          <div className="mb-1 text-[10px] uppercase text-muted-foreground">Updated</div>
-          <div className="truncate text-[11px] text-muted-foreground">{worktree.lastCommit?.relativeTime ?? '-'}</div>
+          <div className="mb-0.5 text-[9.5px] font-medium uppercase text-muted-foreground/80">Updated</div>
+          <div className="truncate text-[10.5px] text-muted-foreground">{worktree.lastCommit?.relativeTime ?? '-'}</div>
         </div>
       </CardContent>
     </Card>
@@ -83,8 +85,8 @@ export function WorktreeCard({ worktree, selected, editor, onSelect, onOpen, onR
 function Meta({ label, value, tone }: { label: string; value: string; tone: 'ok' | 'warn' }) {
   return (
     <div>
-      <div className="mb-1 text-[10px] uppercase text-muted-foreground">{label}</div>
-      <div className={tone === 'ok' ? 'text-emerald-500' : 'text-amber-500'}>{value}</div>
+      <div className="mb-0.5 text-[9.5px] font-medium uppercase text-muted-foreground/80">{label}</div>
+      <div className={tone === 'ok' ? 'text-[10.5px] text-muted-foreground' : 'text-[11px] font-semibold text-amber-400'}>{value}</div>
     </div>
   );
 }
