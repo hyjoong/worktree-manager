@@ -8,7 +8,7 @@
     "dev:web": "vite --host 127.0.0.1",
     "dev:electron": "pnpm build:node && concurrently -k \"vite --host 127.0.0.1\" \"tsc -p tsconfig.node.json --watch --preserveWatchOutput\" \"node --watch scripts/build-preload.mjs\" \"wait-on tcp:5173 dist/main/index.js dist/preload/index.js && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 nodemon --watch dist/main --watch dist/preload --ext js --exec \\\"electron .\\\"\"",
     "build:node": "tsc -p tsconfig.node.json && node scripts/build-preload.mjs",
-    "build": "tsc -p tsconfig.node.json && vite build",
+    "build": "pnpm build:node && vite build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json"
   },
