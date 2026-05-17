@@ -1,0 +1,147 @@
+import { execa } from 'execa';
+import type { CommitSummary, OpenWorktreeInput, WorktreeInfo, WorktreeStatus } from '../../shared/ipc';
+
+type MutableWorktree = {
+  path: string;
+  branch: string | null;
+  head: string | null;
+  isDirty: boolean;
+  isBare: boolean;
+  isDetached: boolean;
+  status: WorktreeStatus;
+  lastCommit: CommitSummary | null;
+};
+
+export function parseWorktreePorcelain(output: string): WorktreeInfo[] {
+  const worktrees: MutableWorktree[] = [];
+  let current: MutableWorktree | null = null;
+
+  const pushCurrent = () => {
+    if (current !== null) {
+      worktrees.push(current);
+      current = null;
+    }
+  };
+
+  for (const line of output.split(/\r?\n/)) {
+    if (line.length === 0) {
+      pushCurrent();
+      continue;
+    }
+
+    const [key, ...valueParts] = line.split(' ');
+    const value = valueParts.join(' ');
+
+    if (key === 'worktree') {
+      pushCurrent();
+      current = {
+        path: value,
+        branch: null,
+        head: null,
+        isDirty: false,
+        isBare: false,
+        isDetached: false,
+        status: 'clean',
+        lastCommit: null,
+      };
+      continue;
+    }
+
+    if (current === null) {
+      continue;
+    }
+
+    switch (key) {
+      case 'HEAD':
+        current.head = value;
+        break;
+      case 'branch':
+        current.branch = value.replace(/^refs\/heads\//, '');
+        break;
+      case 'dirty':
+        current.isDirty = true;
+        current.status = 'dirty';
+        break;
+      case 'bare':
+        current.isBare = true;
+        current.status = 'bare';
+        break;
+      case 'detached':
+        current.isDetached = true;
+        current.status = 'detached';
+        break;
+      default:
+        break;
+    }
+  }
+
+  pushCurrent();
+  return worktrees;
+}
+
+export async function listWorktrees(projectPath: string): Promise<WorktreeInfo[]> {
+  const { stdout } = await execa('git', ['-C', projectPath, 'worktree', 'list', '--porcelain']);
+  const worktrees = parseWorktreePorcelain(stdout);
+
+  return Promise.all(
+    worktrees.map(async (worktree) => {
+      if (worktree.isBare) {
+        return worktree;
+      }
+
+      const [isDirty, lastCommit] = await Promise.all([readDirtyStatus(worktree.path), readLastCommit(worktree.path)]);
+
+      return {
+        ...worktree,
+        isDirty,
+        lastCommit,
+        status: resolveStatus({ ...worktree, isDirty }),
+      };
+    }),
+  );
+}
+
+export async function openWorktree(input: OpenWorktreeInput): Promise<void> {
+  const appName = input.editor === 'cursor' ? 'Cursor' : 'Visual Studio Code';
+  await execa('open', ['-a', appName, input.path]);
+}
+
+export async function removeWorktree(projectPath: string, worktreePath: string): Promise<void> {
+  await execa('git', ['-C', projectPath, 'worktree', 'remove', worktreePath]);
+}
+
+async function readDirtyStatus(path: string): Promise<boolean> {
+  const { stdout } = await execa('git', ['-C', path, 'status', '--porcelain']);
+  return stdout.trim().length > 0;
+}
+
+async function readLastCommit(path: string): Promise<CommitSummary | null> {
+  try {
+    const { stdout } = await execa('git', ['-C', path, 'log', '-1', '--pretty=format:%h%x00%s%x00%cr']);
+    const [hash, subject, relativeTime] = stdout.split('\0');
+
+    if (hash === undefined || subject === undefined || relativeTime === undefined) {
+      return null;
+    }
+
+    return { hash, subject, relativeTime };
+  } catch {
+    return null;
+  }
+}
+
+function resolveStatus(worktree: Pick<WorktreeInfo, 'isBare' | 'isDetached' | 'isDirty'>): WorktreeStatus {
+  if (worktree.isBare) {
+    return 'bare';
+  }
+
+  if (worktree.isDirty) {
+    return 'dirty';
+  }
+
+  if (worktree.isDetached) {
+    return 'detached';
+  }
+
+  return 'clean';
+}
