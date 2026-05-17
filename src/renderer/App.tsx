@@ -36,6 +36,18 @@ export function App() {
     [selectedPath, worktrees],
   );
 
+  function readWorktreeApi() {
+    if (window.worktreeApi === undefined) {
+      const message = 'Electron preload API is not available. Run the app with pnpm dev:electron, not pnpm dev.';
+      setError(message);
+      appendLog(`error: ${message}`);
+      toast({ tone: 'error', title: 'Electron API unavailable', description: message });
+      return null;
+    }
+
+    return window.worktreeApi;
+  }
+
   function appendLog(message: string) {
     const time = new Intl.DateTimeFormat('ko-KR', {
       hour: '2-digit',
@@ -51,7 +63,14 @@ export function App() {
     setError(null);
     appendLog(`$ git -C ${project.path} worktree list --porcelain`);
 
-    const result = await window.worktreeApi.listWorktrees({ projectPath: project.path });
+    const api = readWorktreeApi();
+
+    if (api === null) {
+      setIsLoading(false);
+      return;
+    }
+
+    const result = await api.listWorktrees({ projectPath: project.path });
 
     if (result.ok) {
       setActiveProject(project);
@@ -93,7 +112,13 @@ export function App() {
     }
 
     appendLog(`$ git -C ${path} rev-parse --show-toplevel`);
-    const validation = await window.worktreeApi.validateProject({ projectPath: path });
+    const api = readWorktreeApi();
+
+    if (api === null) {
+      return;
+    }
+
+    const validation = await api.validateProject({ projectPath: path });
 
     if (!validation.ok) {
       setError(validation.error);
@@ -114,7 +139,8 @@ export function App() {
       return null;
     }
 
-    return window.worktreeApi.getDroppedFilePath(file);
+    const api = readWorktreeApi();
+    return api === null ? null : api.getDroppedFilePath(file);
   }
 
   function handleDragOver(event: DragEvent<HTMLElement>) {
@@ -148,23 +174,46 @@ export function App() {
   }
 
   async function browseProjectDirectory() {
-    const result = await window.worktreeApi.selectProjectDirectory();
+    appendLog('$ open native project folder picker');
+    const api = readWorktreeApi();
 
-    if (!result.ok) {
-      setError(result.error);
-      toast({ tone: 'error', title: 'Failed to open folder picker', description: result.error });
+    if (api === null) {
       return;
     }
 
-    if (result.path !== null) {
-      setProjectPath(result.path);
-      await registerProjectPath(result.path);
+    try {
+      const result = await api.selectProjectDirectory();
+
+      if (!result.ok) {
+        setError(result.error);
+        appendLog(`error: ${result.error}`);
+        toast({ tone: 'error', title: 'Failed to open folder picker', description: result.error });
+        return;
+      }
+
+      if (result.path !== null) {
+        setProjectPath(result.path);
+        await registerProjectPath(result.path);
+      } else {
+        appendLog('folder picker canceled');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to open folder picker';
+      setError(message);
+      appendLog(`error: ${message}`);
+      toast({ tone: 'error', title: 'Failed to open folder picker', description: message });
     }
   }
 
   async function openInEditor(worktree: WorktreeInfo, targetEditor: EditorId = editor) {
     appendLog(`$ open -a ${targetEditor === 'cursor' ? 'Cursor' : 'Visual Studio Code'} ${worktree.path}`);
-    const result = await window.worktreeApi.openWorktree({ path: worktree.path, editor: targetEditor });
+    const api = readWorktreeApi();
+
+    if (api === null) {
+      return;
+    }
+
+    const result = await api.openWorktree({ path: worktree.path, editor: targetEditor });
 
     if (result.ok) {
       toast({ tone: 'success', title: `Opened in ${targetEditor === 'cursor' ? 'Cursor' : 'VS Code'}`, description: worktree.path });
@@ -182,7 +231,13 @@ export function App() {
     const target = pendingRemove;
     setPendingRemove(null);
     appendLog(`$ git -C ${activeProject.path} worktree remove ${target.path}`);
-    const result = await window.worktreeApi.removeWorktree({ projectPath: activeProject.path, path: target.path });
+    const api = readWorktreeApi();
+
+    if (api === null) {
+      return;
+    }
+
+    const result = await api.removeWorktree({ projectPath: activeProject.path, path: target.path });
 
     if (result.ok) {
       toast({ tone: 'success', title: 'Worktree removed', description: target.path });
