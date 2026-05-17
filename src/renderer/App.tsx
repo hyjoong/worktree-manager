@@ -355,42 +355,57 @@ export function App() {
       />
 
       <section className="min-h-0 bg-workspace" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
-        <header className="flex h-12 items-center justify-between border-b border-border px-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <GitBranch className="size-4 text-blue-400" />
-              <h1 className="truncate text-sm font-semibold">{activeProject?.name ?? 'No project selected'}</h1>
-              {worktrees.length > 0 ? <span className="text-xs text-muted-foreground">{worktrees.length} worktrees</span> : null}
+        <header className="flex h-10 items-center justify-between border-b border-border/80 bg-background/95 px-2.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-border bg-card">
+              <GitBranch className="size-3.5 text-blue-400" />
             </div>
-            <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
-              {activeProject?.path ?? 'Register a local Git repository from the sidebar.'}
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <h1 className="truncate text-[13px] font-semibold leading-4">{activeProject?.name ?? 'No project selected'}</h1>
+                <span className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] leading-3 text-muted-foreground">
+                  {worktrees.length}
+                </span>
+              </div>
+              <div className="truncate font-mono text-[10px] leading-3 text-muted-foreground/75">
+                {activeProject?.path ?? 'Register a local Git repository from the sidebar.'}
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              disabled={activeProject === null || isLoading}
-              onClick={() => {
-                if (activeProject !== null) {
-                  void loadWorktrees(activeProject);
-                }
-              }}
-              title="Refresh worktrees"
-            >
-              <RefreshCw className="size-4" />
-            </Button>
-            <Button type="button" variant="outline" disabled={activeProject === null || isLoading} onClick={() => setIsCreateOpen(true)}>
-              <GitBranchPlus className="size-4" />
-              New Worktree
-            </Button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex items-center rounded-md border border-border bg-card p-0.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-7 border-transparent hover:bg-accent"
+                disabled={activeProject === null || isLoading}
+                onClick={() => {
+                  if (activeProject !== null) {
+                    void loadWorktrees(activeProject);
+                  }
+                }}
+                title="Refresh worktrees"
+              >
+                <RefreshCw className={`size-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-7 border-transparent px-2 text-[11px] hover:bg-accent"
+                disabled={activeProject === null || isLoading}
+                onClick={() => setIsCreateOpen(true)}
+              >
+                <GitBranchPlus className="size-3.5" />
+                New
+              </Button>
+            </div>
             <EditorSelector editor={editor} onChange={setEditor} />
             <ThemeToggle />
           </div>
         </header>
 
-        <div className="h-[calc(100%-3rem)] overflow-auto p-1.5">
+        <div className="h-[calc(100%-2.5rem)] overflow-auto p-1.5">
           {error !== null ? (
             <Card className="mb-2 border-destructive/35 bg-destructive/10">
               <CardContent className="flex items-start gap-2 p-3 text-xs text-destructive">

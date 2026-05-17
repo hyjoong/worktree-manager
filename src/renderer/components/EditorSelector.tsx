@@ -14,7 +14,7 @@ export function EditorSelector({ editor, onChange }: EditorSelectorProps) {
         type="button"
         variant={editor === 'cursor' ? 'secondary' : 'ghost'}
         size="sm"
-        className="h-7 border-transparent"
+        className="h-7 border-transparent px-2 text-[11px]"
         onClick={() => onChange('cursor')}
       >
         <Code2 className="size-3.5" />
@@ -24,7 +24,7 @@ export function EditorSelector({ editor, onChange }: EditorSelectorProps) {
         type="button"
         variant={editor === 'vscode' ? 'secondary' : 'ghost'}
         size="sm"
-        className="h-7 border-transparent"
+        className="h-7 border-transparent px-2 text-[11px]"
         onClick={() => onChange('vscode')}
       >
         <SquareCode className="size-3.5" />
