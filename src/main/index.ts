@@ -12,6 +12,7 @@ import {
 } from '../shared/ipc';
 import { createWorktree, listWorktrees, openWorktree, removeWorktree, validateProjectPath } from './git/worktree';
 import { handleValidatedIpc } from './ipc/handle';
+import { assertAllowedIpcSender, isAllowedRendererUrl } from './security';
 import { loadProjects, saveProjects } from './settings/projects';
 
 const isDev = process.env.VITE_DEV_SERVER_URL !== undefined;
@@ -31,8 +32,24 @@ function createWindow() {
     },
   });
 
+  window.webContents.on('will-navigate', (event, url) => {
+    if (!isAllowedRendererUrl(url)) {
+      event.preventDefault();
+    }
+  });
+
+  window.webContents.setWindowOpenHandler(() => {
+    return { action: 'deny' };
+  });
+
   if (isDev) {
-    void window.loadURL(process.env.VITE_DEV_SERVER_URL as string);
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL as string;
+
+    if (!isAllowedRendererUrl(devServerUrl)) {
+      throw new Error(`Refusing to load unexpected renderer URL: ${devServerUrl}`);
+    }
+
+    void window.loadURL(devServerUrl);
     window.webContents.openDevTools({ mode: 'detach' });
   } else {
     void window.loadFile(join(__dirname, '../renderer/index.html'));
@@ -63,6 +80,7 @@ handleValidatedIpc(ipcChannels.createWorktree, createWorktreeInputSchema, async 
 
 ipcMain.handle(ipcChannels.selectProjectDirectory, async (event: IpcMainInvokeEvent): Promise<SelectProjectDirectoryResult> => {
   try {
+    assertAllowedIpcSender(event.sender);
     const parentWindow = BrowserWindow.fromWebContents(event.sender);
     const dialogOptions: OpenDialogOptions = {
       title: 'Select a Git project',
@@ -93,8 +111,9 @@ handleValidatedIpc(ipcChannels.validateProject, validateProjectInputSchema, asyn
   };
 });
 
-ipcMain.handle(ipcChannels.loadProjects, async () => {
+ipcMain.handle(ipcChannels.loadProjects, async (event: IpcMainInvokeEvent) => {
   try {
+    assertAllowedIpcSender(event.sender);
     return {
       ok: true,
       projects: await loadProjects(),

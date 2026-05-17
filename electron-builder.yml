@@ -1,0 +1,27 @@
+appId: com.hyjoong.worktree-manager
+productName: Worktree Manager
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+asar: true
+npmRebuild: false
+extraMetadata:
+  main: dist/main/index.js
+  dependencies: {}
+directories:
+  output: release/${version}
+files:
+  - package.json
+  - dist/main/**
+  - dist/preload/**
+  - dist/renderer/**
+mac:
+  category: public.app-category.developer-tools
+  identity: "-"
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+dmg:
+  sign: false
