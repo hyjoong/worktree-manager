@@ -12,6 +12,8 @@ import { WorktreeCard } from './components/WorktreeCard';
 import { WorktreeSkeleton } from './components/WorktreeSkeleton';
 import { Button } from './components/ui/button';
 import { Card, CardContent } from './components/ui/card';
+import { useAppLog } from './hooks/use-app-log';
+import { useWorktreeApi } from './hooks/use-worktree-api';
 import { useEditorStore } from './stores/editor-store';
 import { createRegisteredProject, loadStoredProjects, saveStoredProjects, upsertRecentProject } from './stores/project-store';
 import { useToastStore } from './stores/toast-store';
@@ -29,38 +31,20 @@ export function App() {
   const [newBranch, setNewBranch] = useState('');
   const [newWorktreePath, setNewWorktreePath] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
+  const { logs, appendLog } = useAppLog();
   const [isLoading, setIsLoading] = useState(false);
   const [isDraggingProject, setIsDraggingProject] = useState(false);
   const { editor, setEditor } = useEditorStore();
   const toast = useToastStore((state) => state.push);
+  const { readWorktreeApi } = useWorktreeApi({
+    setError,
+    appendLog,
+  });
 
   const selectedWorktree = useMemo(
     () => worktrees.find((worktree) => worktree.path === selectedPath) ?? worktrees[0] ?? null,
     [selectedPath, worktrees],
   );
-
-  function readWorktreeApi() {
-    if (window.worktreeApi === undefined) {
-      const message = 'Electron preload API is not available. Run the app with pnpm dev:electron, not pnpm dev.';
-      setError(message);
-      appendLog(`error: ${message}`);
-      toast({ tone: 'error', title: 'Electron API unavailable', description: message });
-      return null;
-    }
-
-    return window.worktreeApi;
-  }
-
-  function appendLog(message: string) {
-    const time = new Intl.DateTimeFormat('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    }).format(new Date());
-    setLogs((current) => [`[${time}] ${message}`, ...current].slice(0, 80));
-  }
 
   async function loadWorktrees(project: RegisteredProject, options: { registerProject?: boolean } = {}) {
     setIsLoading(true);
