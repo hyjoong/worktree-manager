@@ -31,7 +31,7 @@ export function App() {
   const [newBranch, setNewBranch] = useState('');
   const [newWorktreePath, setNewWorktreePath] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const { logs, appendLog } = useAppLog();
+  const { logs, appendLog, clearLogs } = useAppLog();
   const [isLoading, setIsLoading] = useState(false);
   const [isDraggingProject, setIsDraggingProject] = useState(false);
   const { editor, setEditor } = useEditorStore();
@@ -435,7 +435,7 @@ export function App() {
 
       <DetailsPanel worktree={selectedWorktree} onOpen={(worktree) => void openInEditor(worktree)} editor={editor} />
       <div className="col-span-3">
-        <LogConsole logs={logs} />
+        <LogConsole logs={logs} onClear={clearLogs} />
       </div>
 
       <ConfirmDialog

@@ -13,5 +13,9 @@ export function useAppLog() {
     setLogs((current) => [`[${time}] ${message}`, ...current].slice(0, 80));
   }
 
-  return { logs, appendLog };
+  function clearLogs() {
+    setLogs([]);
+  }
+
+  return { logs, appendLog, clearLogs };
 }
