@@ -1,5 +1,6 @@
 import { DragEvent, useEffect, useMemo, useState } from 'react';
-import { CircleAlert, GitBranch, GitBranchPlus, RefreshCw } from 'lucide-react';
+import { CircleAlert, GitBranch, GitBranchPlus, RefreshCw, Search } from 'lucide-react';
+import { CommandPalette } from './components/CommandPalette';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { CreateWorktreeDialog } from './components/CreateWorktreeDialog';
 import { DetailsPanel } from './components/DetailsPanel';
@@ -13,7 +14,9 @@ import { WorktreeSkeleton } from './components/WorktreeSkeleton';
 import { Button } from './components/ui/button';
 import { Card, CardContent } from './components/ui/card';
 import { useAppLog } from './hooks/use-app-log';
+import { useKeyboardShortcuts } from './hooks/use-keyboard-shortcuts';
 import { useWorktreeApi } from './hooks/use-worktree-api';
+import { buildCommandItems, updateRecentCommandIds, type CommandItem } from './lib/command-palette';
 import { useEditorStore } from './stores/editor-store';
 import { createRegisteredProject, upsertRecentProject } from './stores/project-store';
 import { useToastStore } from './stores/toast-store';
@@ -28,6 +31,8 @@ export function App() {
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [pendingRemove, setPendingRemove] = useState<WorktreeInfo | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
+  const [recentCommandIds, setRecentCommandIds] = useState<string[]>([]);
   const [newBranch, setNewBranch] = useState('');
   const [newWorktreePath, setNewWorktreePath] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +50,26 @@ export function App() {
     () => worktrees.find((worktree) => worktree.path === selectedPath) ?? worktrees[0] ?? null,
     [selectedPath, worktrees],
   );
+  const commandItems = useMemo(
+    () =>
+      buildCommandItems({
+        projects,
+        worktrees,
+        activeProject,
+        selectedWorktree,
+        editor,
+        recentCommandIds,
+      }),
+    [activeProject, editor, projects, recentCommandIds, selectedWorktree, worktrees],
+  );
+
+  useKeyboardShortcuts([
+    {
+      key: 'k',
+      meta: true,
+      handler: () => setIsCommandOpen((open) => !open),
+    },
+  ]);
 
   useEffect(() => {
     const api = readWorktreeApi();
@@ -332,6 +357,53 @@ export function App() {
     }
   }
 
+  function executeCommand(item: CommandItem) {
+    if (item.disabled === true) {
+      return;
+    }
+
+    setRecentCommandIds((current) => updateRecentCommandIds(current, item.id));
+    setIsCommandOpen(false);
+
+    if (item.action === 'refresh-worktrees') {
+      if (activeProject !== null) {
+        void loadWorktrees(activeProject);
+      }
+      return;
+    }
+
+    if (item.action === 'create-worktree') {
+      setIsCreateOpen(true);
+      return;
+    }
+
+    if (item.action === 'select-project') {
+      const project = projects.find((candidate) => candidate.path === item.targetPath);
+
+      if (project !== undefined) {
+        void loadWorktrees(project);
+      }
+      return;
+    }
+
+    if (item.action === 'open-worktree') {
+      const worktree = worktrees.find((candidate) => candidate.path === item.targetPath);
+
+      if (worktree !== undefined) {
+        void openInEditor(worktree, 'cursor');
+      }
+      return;
+    }
+
+    if (item.action === 'remove-worktree') {
+      const worktree = worktrees.find((candidate) => candidate.path === item.targetPath);
+
+      if (worktree !== undefined) {
+        setPendingRemove(worktree);
+      }
+    }
+  }
+
   return (
     <main className="grid h-screen min-h-[640px] grid-cols-[260px_minmax(480px,1fr)_320px] grid-rows-[1fr_137px] overflow-hidden bg-background text-foreground">
       <Sidebar
@@ -374,6 +446,16 @@ export function App() {
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <div className="flex items-center rounded-md border border-border bg-card p-0.5">
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-7 border-transparent px-2 text-[11px] hover:bg-accent"
+                onClick={() => setIsCommandOpen(true)}
+                title="Open command palette"
+              >
+                <Search className="size-3.5" />
+                <span className="font-mono text-[10px] text-muted-foreground">⌘K</span>
+              </Button>
               <Button
                 type="button"
                 variant="ghost"
@@ -475,6 +557,7 @@ export function App() {
         onPathChange={setNewWorktreePath}
         onCreate={() => void createNewWorktree()}
       />
+      <CommandPalette open={isCommandOpen} items={commandItems} onOpenChange={setIsCommandOpen} onExecute={executeCommand} />
       <ToastHost />
     </main>
   );
