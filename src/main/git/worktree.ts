@@ -8,6 +8,7 @@ type MutableWorktree = {
   isDirty: boolean;
   isBare: boolean;
   isDetached: boolean;
+  isMain: boolean;
   status: WorktreeStatus;
   lastCommit: CommitSummary | null;
 };
@@ -41,6 +42,7 @@ export function parseWorktreePorcelain(output: string): WorktreeInfo[] {
         isDirty: false,
         isBare: false,
         isDetached: false,
+        isMain: worktrees.length === 0,
         status: 'clean',
         lastCommit: null,
       };
@@ -101,12 +103,26 @@ export async function listWorktrees(projectPath: string): Promise<WorktreeInfo[]
   );
 }
 
+export async function validateProjectPath(projectPath: string): Promise<string> {
+  const { stdout } = await execa('git', ['-C', projectPath, 'rev-parse', '--show-toplevel']);
+  return stdout.trim();
+}
+
 export async function openWorktree(input: OpenWorktreeInput): Promise<void> {
   const appName = input.editor === 'cursor' ? 'Cursor' : 'Visual Studio Code';
   await execa('open', ['-a', appName, input.path]);
 }
 
 export async function removeWorktree(projectPath: string, worktreePath: string): Promise<void> {
+  const worktrees = parseWorktreePorcelain(
+    (await execa('git', ['-C', projectPath, 'worktree', 'list', '--porcelain'])).stdout,
+  );
+  const target = worktrees.find((worktree) => worktree.path === worktreePath);
+
+  if (target?.isMain === true) {
+    throw new Error('The main worktree cannot be removed from this app.');
+  }
+
   await execa('git', ['-C', projectPath, 'worktree', 'remove', worktreePath]);
 }
 

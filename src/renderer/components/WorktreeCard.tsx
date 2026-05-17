@@ -2,17 +2,18 @@ import { Code2, GitBranch, GitCommitHorizontal, Trash2 } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader } from './ui/card';
-import type { WorktreeInfo } from '../../shared/ipc';
+import type { EditorId, WorktreeInfo } from '../../shared/ipc';
 
 type WorktreeCardProps = {
   worktree: WorktreeInfo;
   selected: boolean;
+  editor: EditorId;
   onSelect(worktree: WorktreeInfo): void;
   onOpen(worktree: WorktreeInfo): void;
   onRemove(worktree: WorktreeInfo): void;
 };
 
-export function WorktreeCard({ worktree, selected, onSelect, onOpen, onRemove }: WorktreeCardProps) {
+export function WorktreeCard({ worktree, selected, editor, onSelect, onOpen, onRemove }: WorktreeCardProps) {
   return (
     <Card
       className={`cursor-default transition-colors ${
@@ -40,17 +41,18 @@ export function WorktreeCard({ worktree, selected, onSelect, onOpen, onRemove }:
             }}
           >
             <Code2 className="size-3.5" />
-            Cursor
+            {editor === 'cursor' ? 'Cursor' : 'VS Code'}
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="icon"
+            disabled={worktree.isMain}
             onClick={(event) => {
               event.stopPropagation();
               onRemove(worktree);
             }}
-            title="Remove worktree"
+            title={worktree.isMain ? 'Main worktree cannot be removed' : 'Remove worktree'}
           >
             <Trash2 className="size-3.5 text-muted-foreground" />
           </Button>

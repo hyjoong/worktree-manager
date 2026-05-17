@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { CircleAlert, GitBranch, RefreshCw } from 'lucide-react';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { DetailsPanel } from './components/DetailsPanel';
+import { EditorSelector } from './components/EditorSelector';
 import { LogConsole } from './components/LogConsole';
 import { Sidebar } from './components/Sidebar';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -10,13 +11,15 @@ import { WorktreeCard } from './components/WorktreeCard';
 import { WorktreeSkeleton } from './components/WorktreeSkeleton';
 import { Button } from './components/ui/button';
 import { Card, CardContent } from './components/ui/card';
+import { useEditorStore } from './stores/editor-store';
+import { createRegisteredProject, loadStoredProjects, saveStoredProjects, upsertRecentProject } from './stores/project-store';
 import { useToastStore } from './stores/toast-store';
 import type { RegisteredProject } from './types/project';
-import type { WorktreeInfo } from '../shared/ipc';
+import type { EditorId, WorktreeInfo } from '../shared/ipc';
 
 export function App() {
   const [projectPath, setProjectPath] = useState('');
-  const [projects, setProjects] = useState<RegisteredProject[]>([]);
+  const [projects, setProjects] = useState<RegisteredProject[]>(() => loadStoredProjects());
   const [activeProject, setActiveProject] = useState<RegisteredProject | null>(null);
   const [worktrees, setWorktrees] = useState<WorktreeInfo[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
@@ -24,6 +27,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { editor, setEditor } = useEditorStore();
   const toast = useToastStore((state) => state.push);
 
   const selectedWorktree = useMemo(
@@ -53,7 +57,11 @@ export function App() {
       setWorktrees(result.worktrees);
       setSelectedPath(result.worktrees[0]?.path ?? null);
       if (options.registerProject === true) {
-        setProjects((current) => [project, ...current.filter((item) => item.path !== project.path)]);
+        setProjects((current) => {
+          const nextProjects = upsertRecentProject(current, project);
+          saveStoredProjects(nextProjects);
+          return nextProjects;
+        });
       }
       appendLog(`listed ${result.worktrees.length} worktrees`);
     } else {
@@ -79,11 +87,17 @@ export function App() {
   }
 
   async function registerProjectPath(path: string) {
-    const project = {
-      name: path.split('/').filter(Boolean).at(-1) ?? path,
-      path,
-    };
+    appendLog(`$ git -C ${path} rev-parse --show-toplevel`);
+    const validation = await window.worktreeApi.validateProject({ projectPath: path });
 
+    if (!validation.ok) {
+      setError(validation.error);
+      appendLog(`error: ${validation.error}`);
+      toast({ tone: 'error', title: 'Invalid Git project', description: validation.error });
+      return;
+    }
+
+    const project = createRegisteredProject(validation.rootPath);
     await loadWorktrees(project, { registerProject: true });
     setProjectPath('');
   }
@@ -103,15 +117,15 @@ export function App() {
     }
   }
 
-  async function openInCursor(worktree: WorktreeInfo) {
-    appendLog(`$ open -a Cursor ${worktree.path}`);
-    const result = await window.worktreeApi.openWorktree({ path: worktree.path, editor: 'cursor' });
+  async function openInEditor(worktree: WorktreeInfo, targetEditor: EditorId = editor) {
+    appendLog(`$ open -a ${targetEditor === 'cursor' ? 'Cursor' : 'Visual Studio Code'} ${worktree.path}`);
+    const result = await window.worktreeApi.openWorktree({ path: worktree.path, editor: targetEditor });
 
     if (result.ok) {
-      toast({ tone: 'success', title: 'Opened in Cursor', description: worktree.path });
+      toast({ tone: 'success', title: `Opened in ${targetEditor === 'cursor' ? 'Cursor' : 'VS Code'}`, description: worktree.path });
     } else {
       appendLog(`error: ${result.error}`);
-      toast({ tone: 'error', title: 'Failed to open Cursor', description: result.error });
+      toast({ tone: 'error', title: `Failed to open ${targetEditor === 'cursor' ? 'Cursor' : 'VS Code'}`, description: result.error });
     }
   }
 
@@ -179,6 +193,7 @@ export function App() {
             >
               <RefreshCw className="size-4" />
             </Button>
+            <EditorSelector editor={editor} onChange={setEditor} />
             <ThemeToggle />
           </div>
         </header>
@@ -210,8 +225,9 @@ export function App() {
                   key={`${worktree.path}:${worktree.head ?? 'no-head'}`}
                   worktree={worktree}
                   selected={selectedWorktree?.path === worktree.path}
+                  editor={editor}
                   onSelect={(nextWorktree) => setSelectedPath(nextWorktree.path)}
-                  onOpen={(nextWorktree) => void openInCursor(nextWorktree)}
+                  onOpen={(nextWorktree) => void openInEditor(nextWorktree)}
                   onRemove={setPendingRemove}
                 />
               ))}
@@ -220,7 +236,7 @@ export function App() {
         </div>
       </section>
 
-      <DetailsPanel worktree={selectedWorktree} onOpen={(worktree) => void openInCursor(worktree)} />
+      <DetailsPanel worktree={selectedWorktree} onOpen={(worktree) => void openInEditor(worktree)} editor={editor} />
       <div className="col-span-3">
         <LogConsole logs={logs} />
       </div>

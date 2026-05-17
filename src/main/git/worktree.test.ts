@@ -24,6 +24,7 @@ describe('parseWorktreePorcelain', () => {
         isDetached: false,
         status: 'clean',
         lastCommit: null,
+        isMain: true,
       },
       {
         path: '/repo-feature',
@@ -34,6 +35,7 @@ describe('parseWorktreePorcelain', () => {
         isDetached: false,
         status: 'clean',
         lastCommit: null,
+        isMain: false,
       },
     ]);
   });
@@ -71,6 +73,7 @@ describe('parseWorktreePorcelain', () => {
         isDetached: true,
         status: 'detached',
         lastCommit: null,
+        isMain: true,
       },
       {
         path: '/repo-bare',
@@ -81,6 +84,7 @@ describe('parseWorktreePorcelain', () => {
         isDetached: false,
         status: 'bare',
         lastCommit: null,
+        isMain: false,
       },
     ]);
   });

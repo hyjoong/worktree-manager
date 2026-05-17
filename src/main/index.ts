@@ -5,11 +5,13 @@ import {
   listWorktreesInputSchema,
   openWorktreeInputSchema,
   removeWorktreeInputSchema,
+  validateProjectInputSchema,
   type ListWorktreesResult,
   type MutationResult,
   type SelectProjectDirectoryResult,
+  type ValidateProjectResult,
 } from '../shared/ipc';
-import { listWorktrees, openWorktree, removeWorktree } from './git/worktree';
+import { listWorktrees, openWorktree, removeWorktree, validateProjectPath } from './git/worktree';
 
 const isDev = process.env.VITE_DEV_SERVER_URL !== undefined;
 
@@ -123,6 +125,29 @@ ipcMain.handle(ipcChannels.selectProjectDirectory, async (event): Promise<Select
     return {
       ok: false,
       error: error instanceof Error ? error.message : 'Failed to select project directory',
+    };
+  }
+});
+
+ipcMain.handle(ipcChannels.validateProject, async (_event, input: unknown): Promise<ValidateProjectResult> => {
+  const parsed = validateProjectInputSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues.map((issue) => issue.message).join(', '),
+    };
+  }
+
+  try {
+    return {
+      ok: true,
+      rootPath: await validateProjectPath(parsed.data.projectPath),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Selected folder is not a Git repository',
     };
   }
 });

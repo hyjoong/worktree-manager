@@ -2,14 +2,15 @@ import { Copy, ExternalLink, GitBranch, GitCommitHorizontal } from 'lucide-react
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader } from './ui/card';
-import type { WorktreeInfo } from '../../shared/ipc';
+import type { EditorId, WorktreeInfo } from '../../shared/ipc';
 
 type DetailsPanelProps = {
   worktree: WorktreeInfo | null;
+  editor: EditorId;
   onOpen(worktree: WorktreeInfo): void;
 };
 
-export function DetailsPanel({ worktree, onOpen }: DetailsPanelProps) {
+export function DetailsPanel({ worktree, editor, onOpen }: DetailsPanelProps) {
   if (worktree === null) {
     return (
       <aside className="border-l border-border bg-panel p-2">
@@ -37,7 +38,7 @@ export function DetailsPanel({ worktree, onOpen }: DetailsPanelProps) {
           </div>
           <Button type="button" variant="outline" size="sm" onClick={() => onOpen(worktree)}>
             <ExternalLink className="size-3.5" />
-            Open
+            {editor === 'cursor' ? 'Cursor' : 'VS Code'}
           </Button>
         </CardHeader>
         <CardContent className="min-h-0 flex-1 space-y-4 overflow-auto text-xs">

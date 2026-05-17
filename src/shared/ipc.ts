@@ -5,6 +5,7 @@ export const ipcChannels = {
   openWorktree: 'git:open-worktree',
   removeWorktree: 'git:remove-worktree',
   selectProjectDirectory: 'dialog:select-project-directory',
+  validateProject: 'git:validate-project',
 } as const;
 
 export const listWorktreesInputSchema = z.object({
@@ -21,9 +22,15 @@ export const removeWorktreeInputSchema = z.object({
   path: z.string().trim().min(1, 'Worktree path is required'),
 });
 
+export const validateProjectInputSchema = z.object({
+  projectPath: z.string().trim().min(1, 'Project path is required'),
+});
+
 export type ListWorktreesInput = z.infer<typeof listWorktreesInputSchema>;
 export type OpenWorktreeInput = z.infer<typeof openWorktreeInputSchema>;
 export type RemoveWorktreeInput = z.infer<typeof removeWorktreeInputSchema>;
+export type ValidateProjectInput = z.infer<typeof validateProjectInputSchema>;
+export type EditorId = OpenWorktreeInput['editor'];
 
 export type WorktreeStatus = 'clean' | 'dirty' | 'bare' | 'detached';
 
@@ -40,6 +47,7 @@ export type WorktreeInfo = {
   isDirty: boolean;
   isBare: boolean;
   isDetached: boolean;
+  isMain: boolean;
   status: WorktreeStatus;
   lastCommit: CommitSummary | null;
 };
@@ -73,9 +81,20 @@ export type SelectProjectDirectoryResult =
       error: string;
     };
 
+export type ValidateProjectResult =
+  | {
+      ok: true;
+      rootPath: string;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
 export type WorktreeApi = {
   listWorktrees(input: ListWorktreesInput): Promise<ListWorktreesResult>;
   openWorktree(input: OpenWorktreeInput): Promise<MutationResult>;
   removeWorktree(input: RemoveWorktreeInput): Promise<MutationResult>;
   selectProjectDirectory(): Promise<SelectProjectDirectoryResult>;
+  validateProject(input: ValidateProjectInput): Promise<ValidateProjectResult>;
 };

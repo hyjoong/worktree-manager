@@ -4,6 +4,7 @@ import {
   listWorktreesInputSchema,
   openWorktreeInputSchema,
   removeWorktreeInputSchema,
+  validateProjectInputSchema,
   type WorktreeApi,
 } from '../shared/ipc';
 
@@ -22,6 +23,10 @@ const worktreeApi: WorktreeApi = {
   },
   selectProjectDirectory() {
     return ipcRenderer.invoke(ipcChannels.selectProjectDirectory);
+  },
+  validateProject(input) {
+    const parsed = validateProjectInputSchema.parse(input);
+    return ipcRenderer.invoke(ipcChannels.validateProject, parsed);
   },
 };
 
