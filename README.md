@@ -1,54 +1,63 @@
 # Worktree Manager
 
-A macOS desktop app for managing local Git worktrees.
+로컬 Git worktree를 관리하기 위한 macOS 데스크톱 앱입니다.
 
-Worktree Manager is built for developer productivity workflows where one repository is split into multiple working folders for parallel branches, reviews, experiments, or feature work.
+하나의 Git 레포에서 여러 작업 폴더를 만들어 브랜치별 작업, 리뷰, 실험, 기능 개발을 병렬로 진행하는 흐름을 더 편하게 관리하려고 만든 개발자용 생산성 앱입니다.
 
-## Features
+## 주요 기능
 
-- Register local Git projects from a native folder picker, manual path input, or drag and drop.
-- List `git worktree list --porcelain` results with parsed path, branch, status, dirty state, and latest commit.
-- Create and remove worktrees.
-- Open worktrees in Cursor or VS Code.
-- Search projects, worktrees, and actions with a Raycast-style command palette using `Cmd+K`.
-- Persist registered projects locally in Electron app data.
-- Show compact terminal-style logs for Git and app actions.
-- Dark/light theme support.
+- 로컬 Git 프로젝트 등록
+- `git worktree list --porcelain` 기반 worktree 목록 표시
+- worktree path, branch, status, dirty 여부, 마지막 commit 표시
+- 새 worktree 생성
+- worktree 삭제
+- Cursor 또는 VS Code로 worktree 열기
+- `Cmd+K` Raycast 스타일 command palette
+- 프로젝트/워크트리/액션 검색
+- 프로젝트 목록 로컬 저장
+- Git 명령 실행 로그 콘솔
+- 다크모드/라이트모드
 
-## Download
+## 다운로드
 
-Latest release:
+최신 릴리즈:
 
 https://github.com/hyjoong/worktree-manager/releases/latest
 
-macOS arm64 assets are published as:
+macOS Apple Silicon용 파일:
 
 - `Worktree.Manager-*-mac-arm64.dmg`
 - `Worktree.Manager-*-mac-arm64.zip`
 
-Current builds are unsigned and not notarized. macOS may show a security warning when opening the app for the first time.
+현재 빌드는 아직 Apple Developer ID 서명과 notarization을 하지 않은 상태입니다. 처음 실행할 때 macOS 보안 경고가 뜰 수 있습니다.
 
-## Requirements
+## 요구사항
 
-- macOS on Apple Silicon for the published arm64 builds.
-- Git installed and available on `PATH`.
-- Cursor and/or VS Code installed if you want to use the editor open actions.
+- macOS Apple Silicon
+- Git
+- Cursor 또는 VS Code
 
-## Development
+Git은 터미널에서 실행 가능한 상태여야 합니다.
 
-Install dependencies:
+```bash
+git --version
+```
+
+## 개발
+
+의존성 설치:
 
 ```bash
 pnpm install
 ```
 
-Run the Electron app in development:
+Electron 개발 환경 실행:
 
 ```bash
 pnpm dev
 ```
 
-Run checks:
+검증:
 
 ```bash
 pnpm typecheck
@@ -56,25 +65,25 @@ pnpm test
 pnpm build
 ```
 
-Generate the macOS app icon from `assets/icon-source.png`:
+macOS 앱 아이콘 재생성:
 
 ```bash
 pnpm icon:mac
 ```
 
-Build macOS release artifacts:
+macOS 배포 파일 생성:
 
 ```bash
 pnpm dist:mac
 ```
 
-Artifacts are written to:
+생성된 파일은 아래 경로에 저장됩니다.
 
 ```text
 release/<version>/
 ```
 
-## Architecture
+## 프로젝트 구조
 
 ```text
 src/
@@ -92,25 +101,32 @@ src/
   shared/
 ```
 
-The renderer does not access Node APIs directly. Git and filesystem-adjacent operations are exposed through a typed preload API and validated IPC handlers.
+## 구현 메모
 
-Git commands are executed with `execa` using argument arrays, not shell string composition.
+- Electron main, preload, renderer를 분리합니다.
+- renderer에서는 Node API에 직접 접근하지 않습니다.
+- preload에서 타입이 지정된 API만 노출합니다.
+- IPC input은 `zod`로 검증합니다.
+- Git 명령은 `execa`로 실행합니다.
+- shell 문자열 조합 대신 args 배열 방식으로 실행합니다.
+- 등록한 프로젝트 목록은 Electron app data에 저장합니다.
 
-## Security Notes
+## 보안 메모
 
-- `contextIsolation` is enabled.
-- `nodeIntegration` is disabled.
-- Electron sandboxing is enabled.
-- IPC inputs are validated with `zod`.
-- IPC senders and renderer navigation are restricted to packaged file URLs and the local Vite dev server.
+- `contextIsolation` 활성화
+- `nodeIntegration` 비활성화
+- Electron sandbox 활성화
+- IPC sender 검증
+- renderer navigation 제한
+- 외부 window open 차단
 
-## Packaging Notes
+## 패키징
 
-The app uses `electron-builder` with:
+`electron-builder`를 사용합니다.
 
 - `asar: true`
-- macOS `dmg` and `zip` targets
+- macOS `dmg`, `zip` target
 - custom `build/icon.icns`
-- unsigned local distribution for now
+- 현재는 unsigned local distribution
 
-For public distribution, the next step is Apple Developer ID signing and notarization.
+외부 사용자에게 자연스럽게 배포하려면 다음 단계로 Apple Developer ID signing과 notarization을 추가해야 합니다.
