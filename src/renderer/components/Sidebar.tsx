@@ -1,6 +1,6 @@
 import type { DragEvent } from 'react';
 import { useMemo, useState } from 'react';
-import { FolderGit2, FolderOpen, Pin, RefreshCw, Search } from 'lucide-react';
+import { FolderGit2, FolderOpen, RefreshCw, Search } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import type { RegisteredProject } from '../types/project';
@@ -41,7 +41,6 @@ export function Sidebar({
       return project.name.toLowerCase().includes(normalizedQuery) || project.path.toLowerCase().includes(normalizedQuery);
     });
   }, [normalizedQuery, projects]);
-  const pinnedProjects = projects.slice(0, 3);
 
   return (
     <aside
@@ -84,23 +83,6 @@ export function Sidebar({
           placeholder="Search projects"
         />
       </div>
-
-      {pinnedProjects.length > 0 ? (
-        <div className="mb-2">
-          <SectionHeader label="Pinned" count={pinnedProjects.length} />
-          <div className="space-y-0.5">
-            {pinnedProjects.map((project) => (
-              <ProjectRow
-                key={`pinned:${project.path}`}
-                project={project}
-                active={activeProject?.path === project.path}
-                pinned
-                onSelect={onSelect}
-              />
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       <div className="mb-1 flex items-center justify-between px-1">
         <SectionHeader label="Recent" count={filteredProjects.length} />
@@ -145,12 +127,10 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
 function ProjectRow({
   project,
   active,
-  pinned = false,
   onSelect,
 }: {
   project: RegisteredProject;
   active: boolean;
-  pinned?: boolean;
   onSelect(project: RegisteredProject): void;
 }) {
   return (
@@ -164,7 +144,7 @@ function ProjectRow({
       }`}
     >
       <span className="flex size-5 shrink-0 items-center justify-center rounded border border-border bg-background text-muted-foreground group-hover:text-foreground">
-        {pinned ? <Pin className="size-3" /> : <FolderGit2 className="size-3" />}
+        <FolderGit2 className="size-3" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[12px] font-medium leading-4">{project.name}</span>
