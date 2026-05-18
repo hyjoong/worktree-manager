@@ -280,6 +280,24 @@ export function App() {
     }
   }
 
+  async function copyWorktreePath(worktree: WorktreeInfo) {
+    appendLog(`$ copy path ${worktree.path}`);
+    const api = readWorktreeApi();
+
+    if (api === null) {
+      return;
+    }
+
+    const result = await api.copyText({ text: worktree.path });
+
+    if (result.ok) {
+      toast({ tone: 'success', title: 'Copied path', description: worktree.path });
+    } else {
+      appendLog(`error: ${result.error}`);
+      toast({ tone: 'error', title: 'Failed to copy path', description: result.error });
+    }
+  }
+
   async function removePendingWorktree() {
     if (pendingRemove === null || activeProject === null) {
       return;
@@ -512,7 +530,12 @@ export function App() {
         </div>
       </section>
 
-      <DetailsPanel worktree={selectedWorktree} onOpen={(worktree) => void openInEditor(worktree)} editor={editor} />
+      <DetailsPanel
+        worktree={selectedWorktree}
+        onOpen={(worktree) => void openInEditor(worktree)}
+        onCopyPath={(worktree) => void copyWorktreePath(worktree)}
+        editor={editor}
+      />
       <div className="col-span-3">
         <LogConsole logs={logs} onClear={clearLogs} />
       </div>

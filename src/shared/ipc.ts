@@ -9,6 +9,7 @@ export const ipcChannels = {
   validateProject: 'git:validate-project',
   loadProjects: 'settings:load-projects',
   saveProjects: 'settings:save-projects',
+  copyText: 'clipboard:copy-text',
 } as const;
 
 export const listWorktreesInputSchema = z.object({
@@ -44,6 +45,10 @@ export const saveProjectsInputSchema = z.object({
   projects: z.array(registeredProjectSchema),
 });
 
+export const copyTextInputSchema = z.object({
+  text: z.string().min(1, 'Text is required'),
+});
+
 export type ListWorktreesInput = z.infer<typeof listWorktreesInputSchema>;
 export type OpenWorktreeInput = z.infer<typeof openWorktreeInputSchema>;
 export type RemoveWorktreeInput = z.infer<typeof removeWorktreeInputSchema>;
@@ -51,6 +56,7 @@ export type CreateWorktreeInput = z.infer<typeof createWorktreeInputSchema>;
 export type ValidateProjectInput = z.infer<typeof validateProjectInputSchema>;
 export type RegisteredProjectInfo = z.infer<typeof registeredProjectSchema>;
 export type SaveProjectsInput = z.infer<typeof saveProjectsInputSchema>;
+export type CopyTextInput = z.infer<typeof copyTextInputSchema>;
 export type EditorId = OpenWorktreeInput['editor'];
 
 export type WorktreeStatus = 'clean' | 'dirty' | 'bare' | 'detached';
@@ -131,5 +137,6 @@ export type WorktreeApi = {
   validateProject(input: ValidateProjectInput): Promise<ValidateProjectResult>;
   loadProjects(): Promise<LoadProjectsResult>;
   saveProjects(input: SaveProjectsInput): Promise<MutationResult>;
+  copyText(input: CopyTextInput): Promise<MutationResult>;
   getDroppedFilePath(file: File): string | null;
 };

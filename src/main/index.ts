@@ -1,6 +1,7 @@
-import { app, BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent, type OpenDialogOptions } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, type IpcMainInvokeEvent, type OpenDialogOptions } from 'electron';
 import { join } from 'node:path';
 import {
+  copyTextInputSchema,
   createWorktreeInputSchema,
   ipcChannels,
   listWorktreesInputSchema,
@@ -128,6 +129,11 @@ ipcMain.handle(ipcChannels.loadProjects, async (event: IpcMainInvokeEvent) => {
 
 handleValidatedIpc(ipcChannels.saveProjects, saveProjectsInputSchema, async (input) => {
   await saveProjects(input.projects);
+  return { ok: true };
+});
+
+handleValidatedIpc(ipcChannels.copyText, copyTextInputSchema, async (input) => {
+  clipboard.writeText(input.text);
   return { ok: true };
 });
 

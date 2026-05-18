@@ -8,9 +8,10 @@ type DetailsPanelProps = {
   worktree: WorktreeInfo | null;
   editor: EditorId;
   onOpen(worktree: WorktreeInfo): void;
+  onCopyPath(worktree: WorktreeInfo): void;
 };
 
-export function DetailsPanel({ worktree, editor, onOpen }: DetailsPanelProps) {
+export function DetailsPanel({ worktree, editor, onOpen, onCopyPath }: DetailsPanelProps) {
   if (worktree === null) {
     return (
       <aside className="border-l border-border bg-panel p-2">
@@ -67,7 +68,7 @@ export function DetailsPanel({ worktree, editor, onOpen }: DetailsPanelProps) {
             type="button"
             variant="secondary"
             className="w-full"
-            onClick={() => void navigator.clipboard.writeText(worktree.path)}
+            onClick={() => onCopyPath(worktree)}
           >
             <Copy className="size-3.5" />
             Copy path

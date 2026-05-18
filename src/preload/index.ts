@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import {
+  copyTextInputSchema,
   createWorktreeInputSchema,
   ipcChannels,
   listWorktreesInputSchema,
@@ -40,6 +41,10 @@ const worktreeApi: WorktreeApi = {
   saveProjects(input) {
     const parsed = saveProjectsInputSchema.parse(input);
     return ipcRenderer.invoke(ipcChannels.saveProjects, parsed);
+  },
+  copyText(input) {
+    const parsed = copyTextInputSchema.parse(input);
+    return ipcRenderer.invoke(ipcChannels.copyText, parsed);
   },
   getDroppedFilePath(file) {
     const path = webUtils.getPathForFile(file);
