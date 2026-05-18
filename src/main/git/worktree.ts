@@ -135,7 +135,15 @@ export async function removeWorktree(projectPath: string, worktreePath: string):
 }
 
 export async function createWorktree(input: CreateWorktreeInput): Promise<void> {
-  await execa('git', ['-C', input.projectPath, 'worktree', 'add', '-b', input.branch, input.path]);
+  await execa('git', buildCreateWorktreeArgs(input));
+}
+
+export function buildCreateWorktreeArgs(input: CreateWorktreeInput): string[] {
+  if (input.mode === 'existing') {
+    return ['-C', input.projectPath, 'worktree', 'add', input.path, input.branch];
+  }
+
+  return ['-C', input.projectPath, 'worktree', 'add', '-b', input.branch, input.path];
 }
 
 async function readDirtyStatus(path: string): Promise<boolean> {

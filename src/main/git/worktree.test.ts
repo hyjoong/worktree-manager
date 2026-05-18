@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseWorktreePorcelain } from './worktree';
+import { buildCreateWorktreeArgs, parseWorktreePorcelain } from './worktree';
 
 describe('parseWorktreePorcelain', () => {
   it('parses worktree path, branch, and clean status from porcelain output', () => {
@@ -87,5 +87,29 @@ describe('parseWorktreePorcelain', () => {
         isMain: false,
       },
     ]);
+  });
+});
+
+describe('buildCreateWorktreeArgs', () => {
+  it('builds args for creating a new branch and worktree', () => {
+    expect(
+      buildCreateWorktreeArgs({
+        projectPath: '/repo',
+        mode: 'new',
+        branch: 'feature/a',
+        path: '/repo-feature-a',
+      }),
+    ).toEqual(['-C', '/repo', 'worktree', 'add', '-b', 'feature/a', '/repo-feature-a']);
+  });
+
+  it('builds args for checking out an existing branch into a worktree', () => {
+    expect(
+      buildCreateWorktreeArgs({
+        projectPath: '/repo',
+        mode: 'existing',
+        branch: 'feature/a',
+        path: '/repo-feature-a',
+      }),
+    ).toEqual(['-C', '/repo', 'worktree', 'add', '/repo-feature-a', 'feature/a']);
   });
 });

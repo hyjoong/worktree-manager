@@ -29,6 +29,7 @@ export const removeWorktreeInputSchema = z.object({
 export const createWorktreeInputSchema = z.object({
   projectPath: z.string().trim().min(1, 'Project path is required'),
   path: z.string().trim().min(1, 'Worktree path is required'),
+  mode: z.enum(['new', 'existing']),
   branch: z.string().trim().min(1, 'Branch name is required'),
 });
 
@@ -53,6 +54,7 @@ export type ListWorktreesInput = z.infer<typeof listWorktreesInputSchema>;
 export type OpenWorktreeInput = z.infer<typeof openWorktreeInputSchema>;
 export type RemoveWorktreeInput = z.infer<typeof removeWorktreeInputSchema>;
 export type CreateWorktreeInput = z.infer<typeof createWorktreeInputSchema>;
+export type CreateWorktreeMode = CreateWorktreeInput['mode'];
 export type ValidateProjectInput = z.infer<typeof validateProjectInputSchema>;
 export type RegisteredProjectInfo = z.infer<typeof registeredProjectSchema>;
 export type SaveProjectsInput = z.infer<typeof saveProjectsInputSchema>;

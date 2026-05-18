@@ -22,7 +22,7 @@ import { useEditorStore } from './stores/editor-store';
 import { createRegisteredProject, upsertRecentProject } from './stores/project-store';
 import { useToastStore } from './stores/toast-store';
 import type { RegisteredProject } from './types/project';
-import type { EditorId, WorktreeInfo } from '../shared/ipc';
+import type { CreateWorktreeMode, EditorId, WorktreeInfo } from '../shared/ipc';
 import { getWorktreeRemovalBlocker } from '../shared/worktree-removal';
 
 export function App() {
@@ -34,6 +34,7 @@ export function App() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [recentCommandIds, setRecentCommandIds] = useState<string[]>([]);
+  const [createMode, setCreateMode] = useState<CreateWorktreeMode>('new');
   const [newBranch, setNewBranch] = useState('');
   const [newWorktreePath, setNewWorktreePath] = useState('');
   const [isWorktreePathTouched, setIsWorktreePathTouched] = useState(false);
@@ -347,7 +348,7 @@ export function App() {
       return;
     }
 
-    appendLog(`$ git -C ${activeProject.path} worktree add -b ${branch} ${path}`);
+    appendLog(formatCreateWorktreeCommand(activeProject.path, createMode, branch, path));
     const api = readWorktreeApi();
 
     if (api === null) {
@@ -355,11 +356,12 @@ export function App() {
     }
 
     setIsLoading(true);
-    const result = await api.createWorktree({ projectPath: activeProject.path, branch, path });
+    const result = await api.createWorktree({ projectPath: activeProject.path, mode: createMode, branch, path });
     setIsLoading(false);
 
     if (result.ok) {
       setIsCreateOpen(false);
+      setCreateMode('new');
       setNewBranch('');
       setNewWorktreePath('');
       setIsWorktreePathTouched(false);
@@ -387,6 +389,7 @@ export function App() {
     if (!open) {
       setNewBranch('');
       setNewWorktreePath('');
+      setCreateMode('new');
       setIsWorktreePathTouched(false);
     }
   }
@@ -605,10 +608,12 @@ export function App() {
       />
       <CreateWorktreeDialog
         open={isCreateOpen}
+        mode={createMode}
         branch={newBranch}
         path={newWorktreePath}
         isLoading={isLoading}
         onOpenChange={handleCreateDialogOpenChange}
+        onModeChange={setCreateMode}
         onBranchChange={handleNewBranchChange}
         onPathChange={handleNewWorktreePathChange}
         onCreate={() => void createNewWorktree()}
@@ -617,6 +622,14 @@ export function App() {
       <ToastHost />
     </main>
   );
+}
+
+function formatCreateWorktreeCommand(projectPath: string, mode: CreateWorktreeMode, branch: string, path: string) {
+  if (mode === 'existing') {
+    return `$ git -C ${projectPath} worktree add ${path} ${branch}`;
+  }
+
+  return `$ git -C ${projectPath} worktree add -b ${branch} ${path}`;
 }
 
 function formatRemoveWorktreeDescription(worktree: WorktreeInfo | null) {

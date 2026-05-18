@@ -9,7 +9,7 @@
 - 로컬 Git 프로젝트 등록
 - `git worktree list --porcelain` 기반 worktree 목록 표시
 - worktree path, branch, status, dirty 여부, 마지막 commit 표시
-- 새 worktree 생성
+- 새 브랜치 또는 기존 브랜치 기반 worktree 생성
 - worktree 삭제
 - Cursor 또는 VS Code로 worktree 열기
 - `Cmd+K` Raycast 스타일 command palette
@@ -42,6 +42,17 @@ Git은 터미널에서 실행 가능한 상태여야 합니다.
 ```bash
 git --version
 ```
+
+## 기본 사용 흐름
+
+1. 사이드바에서 `Add Project`를 눌러 Git 프로젝트 폴더를 등록합니다.
+2. 중앙 목록에서 현재 worktree 상태를 확인합니다.
+3. `New`를 눌러 worktree를 생성합니다.
+4. 새 브랜치를 만들 때는 `New branch`, 이미 있는 브랜치를 다른 폴더로 체크아웃할 때는 `Existing branch`를 선택합니다.
+5. branch name을 입력하면 같은 부모 폴더 기준으로 worktree path가 자동 추천됩니다.
+6. 필요한 worktree를 Cursor 또는 VS Code로 엽니다.
+
+예를 들어 `/Users/me/Desktop/teacher-gguge-front` 프로젝트에서 `feature/login` 브랜치를 입력하면 기본 경로는 `/Users/me/Desktop/teacher-gguge-front-feature-login` 형태로 제안됩니다.
 
 ## 개발
 
