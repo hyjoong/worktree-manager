@@ -17,6 +17,7 @@ import { useAppLog } from './hooks/use-app-log';
 import { useKeyboardShortcuts } from './hooks/use-keyboard-shortcuts';
 import { useWorktreeApi } from './hooks/use-worktree-api';
 import { buildCommandItems, updateRecentCommandIds, type CommandItem } from './lib/command-palette';
+import { suggestWorktreePath } from './lib/worktree-path';
 import { useEditorStore } from './stores/editor-store';
 import { createRegisteredProject, upsertRecentProject } from './stores/project-store';
 import { useToastStore } from './stores/toast-store';
@@ -35,6 +36,7 @@ export function App() {
   const [recentCommandIds, setRecentCommandIds] = useState<string[]>([]);
   const [newBranch, setNewBranch] = useState('');
   const [newWorktreePath, setNewWorktreePath] = useState('');
+  const [isWorktreePathTouched, setIsWorktreePathTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { logs, appendLog, clearLogs } = useAppLog();
   const [isLoading, setIsLoading] = useState(false);
@@ -360,6 +362,7 @@ export function App() {
       setIsCreateOpen(false);
       setNewBranch('');
       setNewWorktreePath('');
+      setIsWorktreePathTouched(false);
       toast({ tone: 'success', title: 'Worktree created', description: branch });
       await loadWorktrees(activeProject);
     } else {
@@ -367,6 +370,38 @@ export function App() {
       appendLog(`error: ${result.error}`);
       toast({ tone: 'error', title: 'Failed to create worktree', description: result.error });
     }
+  }
+
+  function openCreateWorktreeDialog() {
+    setIsCreateOpen(true);
+    setIsWorktreePathTouched(false);
+
+    if (activeProject !== null && newBranch.trim().length > 0) {
+      setNewWorktreePath(suggestWorktreePath(activeProject.path, newBranch));
+    }
+  }
+
+  function handleCreateDialogOpenChange(open: boolean) {
+    setIsCreateOpen(open);
+
+    if (!open) {
+      setNewBranch('');
+      setNewWorktreePath('');
+      setIsWorktreePathTouched(false);
+    }
+  }
+
+  function handleNewBranchChange(branch: string) {
+    setNewBranch(branch);
+
+    if (activeProject !== null && !isWorktreePathTouched) {
+      setNewWorktreePath(suggestWorktreePath(activeProject.path, branch));
+    }
+  }
+
+  function handleNewWorktreePathChange(path: string) {
+    setIsWorktreePathTouched(true);
+    setNewWorktreePath(path);
   }
 
   function executeCommand(item: CommandItem) {
@@ -385,7 +420,7 @@ export function App() {
     }
 
     if (item.action === 'create-worktree') {
-      setIsCreateOpen(true);
+      openCreateWorktreeDialog();
       return;
     }
 
@@ -492,7 +527,7 @@ export function App() {
                 variant="ghost"
                 className="h-7 border-transparent px-2 text-[11px] hover:bg-accent"
                 disabled={activeProject === null || isLoading}
-                onClick={() => setIsCreateOpen(true)}
+                onClick={openCreateWorktreeDialog}
               >
                 <GitBranchPlus className="size-3.5" />
                 New
@@ -573,9 +608,9 @@ export function App() {
         branch={newBranch}
         path={newWorktreePath}
         isLoading={isLoading}
-        onOpenChange={setIsCreateOpen}
-        onBranchChange={setNewBranch}
-        onPathChange={setNewWorktreePath}
+        onOpenChange={handleCreateDialogOpenChange}
+        onBranchChange={handleNewBranchChange}
+        onPathChange={handleNewWorktreePathChange}
         onCreate={() => void createNewWorktree()}
       />
       <CommandPalette open={isCommandOpen} items={commandItems} onOpenChange={setIsCommandOpen} onExecute={executeCommand} />
