@@ -1,17 +1,14 @@
 import type { DragEvent } from 'react';
 import { useMemo, useState } from 'react';
-import { FolderGit2, FolderOpen, Pin, Plus, RefreshCw, Search } from 'lucide-react';
+import { FolderGit2, FolderOpen, Pin, RefreshCw, Search } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import type { RegisteredProject } from '../types/project';
 
 type SidebarProps = {
-  projectPath: string;
   projects: RegisteredProject[];
   activeProject: RegisteredProject | null;
   isLoading: boolean;
-  onProjectPathChange(path: string): void;
-  onRegister(): void;
   onBrowse(): void;
   onSelect(project: RegisteredProject): void;
   onRefresh(): void;
@@ -22,12 +19,9 @@ type SidebarProps = {
 };
 
 export function Sidebar({
-  projectPath,
   projects,
   activeProject,
   isLoading,
-  onProjectPathChange,
-  onRegister,
   onBrowse,
   onSelect,
   onRefresh,
@@ -70,31 +64,14 @@ export function Sidebar({
       </div>
 
       <div className={`mb-2 rounded-lg border border-border bg-card p-1.5 ${isDraggingProject ? 'border-blue-500/60 bg-blue-500/10' : ''}`}>
-        <div className="flex gap-1.5">
+        <div className="flex items-center gap-1.5">
           <Button type="button" className="h-7 flex-1 justify-start" onClick={onBrowse} disabled={isLoading}>
             <FolderOpen className="size-3.5" />
             Add Project
           </Button>
-          <Button type="button" variant="outline" size="icon" className="size-7" onClick={onRegister} disabled={isLoading || projectPath.trim().length === 0}>
-            <Plus className="size-3.5" />
-          </Button>
         </div>
-        <div className="mt-1.5 grid gap-1">
-          <Input
-            className="h-7"
-            value={projectPath}
-            onChange={(event) => onProjectPathChange(event.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                onRegister();
-              }
-            }}
-            placeholder="/Users/me/repo"
-            spellCheck={false}
-          />
-          <div className="rounded border border-dashed border-border/80 px-2 py-1 text-center text-[10.5px] text-muted-foreground/80">
-            {isDraggingProject ? 'Drop to register' : 'Drop folder'}
-          </div>
+        <div className="mt-1.5 rounded border border-dashed border-border/80 px-2 py-1 text-center text-[10.5px] text-muted-foreground/80">
+          {isDraggingProject ? 'Drop to register' : 'Drop folder here'}
         </div>
       </div>
 

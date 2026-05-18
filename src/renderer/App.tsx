@@ -24,7 +24,6 @@ import type { RegisteredProject } from './types/project';
 import type { EditorId, WorktreeInfo } from '../shared/ipc';
 
 export function App() {
-  const [projectPath, setProjectPath] = useState('');
   const [projects, setProjects] = useState<RegisteredProject[]>([]);
   const [activeProject, setActiveProject] = useState<RegisteredProject | null>(null);
   const [worktrees, setWorktrees] = useState<WorktreeInfo[]>([]);
@@ -155,17 +154,6 @@ export function App() {
     }
   }
 
-  function registerProject() {
-    const path = projectPath.trim();
-
-    if (path.length === 0) {
-      setError('Project path is required');
-      return;
-    }
-
-    void registerProjectPath(path);
-  }
-
   async function registerProjectPath(path: string) {
     if (isLoading) {
       return;
@@ -193,7 +181,6 @@ export function App() {
       const project = createRegisteredProject(validation.rootPath);
       setIsLoading(false);
       await loadWorktrees(project, { registerProject: true });
-      setProjectPath('');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to validate project';
       setError(message);
@@ -241,7 +228,6 @@ export function App() {
       return;
     }
 
-    setProjectPath(path);
     void registerProjectPath(path);
   }
 
@@ -264,7 +250,6 @@ export function App() {
       }
 
       if (result.path !== null) {
-        setProjectPath(result.path);
         await registerProjectPath(result.path);
       } else {
         appendLog('folder picker canceled');
@@ -407,12 +392,9 @@ export function App() {
   return (
     <main className="grid h-screen min-h-[640px] grid-cols-[260px_minmax(480px,1fr)_320px] grid-rows-[1fr_137px] overflow-hidden bg-background text-foreground">
       <Sidebar
-        projectPath={projectPath}
         projects={projects}
         activeProject={activeProject}
         isLoading={isLoading}
-        onProjectPathChange={setProjectPath}
-        onRegister={registerProject}
         onBrowse={() => void browseProjectDirectory()}
         onSelect={(project) => void loadWorktrees(project)}
         onRefresh={() => {
