@@ -3,6 +3,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader } from './ui/card';
 import type { EditorId, WorktreeInfo } from '../../shared/ipc';
+import { getWorktreeRemovalBlocker } from '../../shared/worktree-removal';
 
 type WorktreeCardProps = {
   worktree: WorktreeInfo;
@@ -14,6 +15,8 @@ type WorktreeCardProps = {
 };
 
 export function WorktreeCard({ worktree, selected, editor, onSelect, onOpen, onRemove }: WorktreeCardProps) {
+  const removalBlocker = getWorktreeRemovalBlocker(worktree);
+
   return (
     <Card
       className={`group relative cursor-default overflow-hidden shadow-none transition-[background-color,border-color,box-shadow,transform] duration-150 ${
@@ -49,12 +52,12 @@ export function WorktreeCard({ worktree, selected, editor, onSelect, onOpen, onR
             type="button"
             variant="ghost"
             size="icon"
-            disabled={worktree.isMain}
+            disabled={removalBlocker !== null}
             onClick={(event) => {
               event.stopPropagation();
               onRemove(worktree);
             }}
-            title={worktree.isMain ? 'Main worktree cannot be removed' : 'Remove worktree'}
+            title={removalBlocker ?? 'Remove worktree'}
           >
             <Trash2 className="size-3.5 text-muted-foreground" />
           </Button>

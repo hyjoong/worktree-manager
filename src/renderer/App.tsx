@@ -22,6 +22,7 @@ import { createRegisteredProject, upsertRecentProject } from './stores/project-s
 import { useToastStore } from './stores/toast-store';
 import type { RegisteredProject } from './types/project';
 import type { EditorId, WorktreeInfo } from '../shared/ipc';
+import { getWorktreeRemovalBlocker } from '../shared/worktree-removal';
 
 export function App() {
   const [projects, setProjects] = useState<RegisteredProject[]>([]);
@@ -304,6 +305,14 @@ export function App() {
     }
 
     const target = pendingRemove;
+    const blocker = getWorktreeRemovalBlocker(target);
+
+    if (blocker !== null) {
+      setPendingRemove(null);
+      toast({ tone: 'error', title: 'Cannot remove worktree', description: blocker });
+      return;
+    }
+
     setPendingRemove(null);
     appendLog(`$ git -C ${activeProject.path} worktree remove ${target.path}`);
     const api = readWorktreeApi();
@@ -402,6 +411,13 @@ export function App() {
       const worktree = worktrees.find((candidate) => candidate.path === item.targetPath);
 
       if (worktree !== undefined) {
+        const blocker = getWorktreeRemovalBlocker(worktree);
+
+        if (blocker !== null) {
+          toast({ tone: 'error', title: 'Cannot remove worktree', description: blocker });
+          return;
+        }
+
         setPendingRemove(worktree);
       }
     }
@@ -548,7 +564,7 @@ export function App() {
           }
         }}
         title="Remove worktree?"
-        description={`This will run git worktree remove for ${pendingRemove?.path ?? 'the selected worktree'}. Uncommitted changes can make Git reject the operation.`}
+        description={formatRemoveWorktreeDescription(pendingRemove)}
         confirmLabel="Remove"
         onConfirm={() => void removePendingWorktree()}
       />
@@ -566,6 +582,20 @@ export function App() {
       <ToastHost />
     </main>
   );
+}
+
+function formatRemoveWorktreeDescription(worktree: WorktreeInfo | null) {
+  if (worktree === null) {
+    return 'This will run git worktree remove for the selected worktree.';
+  }
+
+  return [
+    `Branch: ${worktree.branch ?? (worktree.isDetached ? 'detached HEAD' : '-')}`,
+    `Status: ${worktree.status}`,
+    `Path: ${worktree.path}`,
+    '',
+    'This removes the worktree folder from disk. Only clean non-main worktrees can be removed.',
+  ].join('\n');
 }
 
 function EmptyState({

@@ -30,7 +30,7 @@ export function ConfirmDialog({
             </div>
             <div className="min-w-0">
               <Dialog.Title className="text-sm font-semibold">{title}</Dialog.Title>
-              <Dialog.Description className="mt-1 text-xs leading-5 text-muted-foreground">{description}</Dialog.Description>
+              <Dialog.Description className="mt-1 whitespace-pre-line text-xs leading-5 text-muted-foreground">{description}</Dialog.Description>
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2">

@@ -1,5 +1,6 @@
 import { execa } from 'execa';
 import type { CommitSummary, CreateWorktreeInput, OpenWorktreeInput, WorktreeInfo, WorktreeStatus } from '../../shared/ipc';
+import { getWorktreeRemovalBlocker } from '../../shared/worktree-removal';
 
 type MutableWorktree = {
   path: string;
@@ -119,8 +120,15 @@ export async function removeWorktree(projectPath: string, worktreePath: string):
   );
   const target = worktrees.find((worktree) => worktree.path === worktreePath);
 
-  if (target?.isMain === true) {
-    throw new Error('The main worktree cannot be removed from this app.');
+  if (target === undefined) {
+    throw new Error('Worktree was not found.');
+  }
+
+  const targetWithDirtyStatus = target.isBare ? target : { ...target, isDirty: await readDirtyStatus(target.path) };
+  const blocker = getWorktreeRemovalBlocker(targetWithDirtyStatus);
+
+  if (blocker !== null) {
+    throw new Error(blocker);
   }
 
   await execa('git', ['-C', projectPath, 'worktree', 'remove', worktreePath]);
