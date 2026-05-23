@@ -16,6 +16,7 @@
 - 프로젝트/워크트리/액션 검색
 - 프로젝트 목록 로컬 저장
 - Git 명령 실행 로그 콘솔
+- GitHub Releases 기반 앱 업데이트 확인
 - 다크모드/라이트모드
 
 ## 다운로드
@@ -88,6 +89,12 @@ macOS 배포 파일 생성:
 pnpm dist:mac
 ```
 
+GitHub Releases에 배포 파일 업로드:
+
+```bash
+GH_TOKEN=<github-token> pnpm dist:publish
+```
+
 생성된 파일은 아래 경로에 저장됩니다.
 
 ```text
@@ -138,6 +145,13 @@ src/
 - `asar: true`
 - macOS `dmg`, `zip` target
 - custom `build/icon.icns`
+- GitHub Releases publish 설정
 - 현재는 unsigned local distribution
+
+앱 업데이트는 `electron-updater`를 사용합니다.
+
+- 최초 설치는 `dmg`를 사용합니다.
+- 이후 앱 실행 시 자동으로 업데이트를 확인하고, 앱 내부 `Update` 버튼으로도 GitHub Releases의 최신 버전을 확인할 수 있습니다.
+- macOS 자동 업데이트 메타데이터 생성을 위해 `zip` 타깃을 함께 유지합니다.
 
 외부 사용자에게 자연스럽게 배포하려면 다음 단계로 Apple Developer ID signing과 notarization을 추가해야 합니다.

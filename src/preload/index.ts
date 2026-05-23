@@ -9,6 +9,7 @@ import {
   saveProjectsInputSchema,
   validateProjectInputSchema,
   type WorktreeApi,
+  type UpdateStatus,
 } from '../shared/ipc';
 
 const worktreeApi: WorktreeApi = {
@@ -45,6 +46,21 @@ const worktreeApi: WorktreeApi = {
   copyText(input) {
     const parsed = copyTextInputSchema.parse(input);
     return ipcRenderer.invoke(ipcChannels.copyText, parsed);
+  },
+  checkForUpdates() {
+    return ipcRenderer.invoke(ipcChannels.checkForUpdates);
+  },
+  installUpdate() {
+    return ipcRenderer.invoke(ipcChannels.installUpdate);
+  },
+  onUpdateStatus(callback: (status: UpdateStatus) => void) {
+    const listener = (_event: Electron.IpcRendererEvent, status: UpdateStatus) => {
+      callback(status);
+    };
+    ipcRenderer.on(ipcChannels.updateStatus, listener);
+    return () => {
+      ipcRenderer.removeListener(ipcChannels.updateStatus, listener);
+    };
   },
   getDroppedFilePath(file) {
     const path = webUtils.getPathForFile(file);

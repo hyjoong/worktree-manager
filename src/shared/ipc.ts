@@ -10,6 +10,9 @@ export const ipcChannels = {
   loadProjects: 'settings:load-projects',
   saveProjects: 'settings:save-projects',
   copyText: 'clipboard:copy-text',
+  checkForUpdates: 'updates:check-for-updates',
+  installUpdate: 'updates:install-update',
+  updateStatus: 'updates:status',
 } as const;
 
 export const listWorktreesInputSchema = z.object({
@@ -60,6 +63,14 @@ export type RegisteredProjectInfo = z.infer<typeof registeredProjectSchema>;
 export type SaveProjectsInput = z.infer<typeof saveProjectsInputSchema>;
 export type CopyTextInput = z.infer<typeof copyTextInputSchema>;
 export type EditorId = OpenWorktreeInput['editor'];
+export type UpdatePhase = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
+
+export type UpdateStatus = {
+  phase: UpdatePhase;
+  message: string;
+  version?: string;
+  percent?: number;
+};
 
 export type WorktreeStatus = 'clean' | 'dirty' | 'bare' | 'detached';
 
@@ -140,5 +151,8 @@ export type WorktreeApi = {
   loadProjects(): Promise<LoadProjectsResult>;
   saveProjects(input: SaveProjectsInput): Promise<MutationResult>;
   copyText(input: CopyTextInput): Promise<MutationResult>;
+  checkForUpdates(): Promise<MutationResult>;
+  installUpdate(): Promise<MutationResult>;
+  onUpdateStatus(callback: (status: UpdateStatus) => void): () => void;
   getDroppedFilePath(file: File): string | null;
 };

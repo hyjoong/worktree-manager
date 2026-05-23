@@ -1,5 +1,5 @@
 import { DragEvent, useEffect, useMemo, useState } from 'react';
-import { CircleAlert, GitBranch, GitBranchPlus, RefreshCw, Search } from 'lucide-react';
+import { CircleAlert, Download, GitBranch, GitBranchPlus, RefreshCw, Search } from 'lucide-react';
 import { CommandPalette } from './components/CommandPalette';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { CreateWorktreeDialog } from './components/CreateWorktreeDialog';
@@ -22,7 +22,7 @@ import { useEditorStore } from './stores/editor-store';
 import { createRegisteredProject, upsertRecentProject } from './stores/project-store';
 import { useToastStore } from './stores/toast-store';
 import type { RegisteredProject } from './types/project';
-import type { CreateWorktreeMode, EditorId, WorktreeInfo } from '../shared/ipc';
+import type { CreateWorktreeMode, EditorId, UpdateStatus, WorktreeInfo } from '../shared/ipc';
 import { getWorktreeRemovalBlocker } from '../shared/worktree-removal';
 
 export function App() {
@@ -38,6 +38,7 @@ export function App() {
   const [newBranch, setNewBranch] = useState('');
   const [newWorktreePath, setNewWorktreePath] = useState('');
   const [isWorktreePathTouched, setIsWorktreePathTouched] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ phase: 'idle', message: 'Check for updates' });
   const [error, setError] = useState<string | null>(null);
   const { logs, appendLog, clearLogs } = useAppLog();
   const [isLoading, setIsLoading] = useState(false);
@@ -94,6 +95,31 @@ export function App() {
         toast({ tone: 'error', title: 'Failed to load projects', description: result.error });
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    const api = readWorktreeApi();
+
+    if (api === null) {
+      return;
+    }
+
+    return api.onUpdateStatus((status) => {
+      setUpdateStatus(status);
+      appendLog(`update: ${status.message}`);
+
+      if (status.phase === 'downloaded') {
+        toast({ tone: 'success', title: 'Update ready', description: status.message });
+      }
+
+      if (status.phase === 'not-available') {
+        toast({ tone: 'success', title: 'No update available', description: status.message });
+      }
+
+      if (status.phase === 'error') {
+        toast({ tone: 'error', title: 'Update failed', description: status.message });
+      }
+    });
   }, []);
 
   function persistProjects(nextProjects: RegisteredProject[]) {
@@ -299,6 +325,33 @@ export function App() {
     } else {
       appendLog(`error: ${result.error}`);
       toast({ tone: 'error', title: 'Failed to copy path', description: result.error });
+    }
+  }
+
+  async function handleUpdateAction() {
+    const api = readWorktreeApi();
+
+    if (api === null) {
+      return;
+    }
+
+    if (updateStatus.phase === 'downloaded') {
+      appendLog('$ install downloaded update');
+      const result = await api.installUpdate();
+
+      if (!result.ok) {
+        appendLog(`error: ${result.error}`);
+        toast({ tone: 'error', title: 'Failed to install update', description: result.error });
+      }
+      return;
+    }
+
+    appendLog('$ check for app updates');
+    const result = await api.checkForUpdates();
+
+    if (!result.ok) {
+      appendLog(`error: ${result.error}`);
+      toast({ tone: 'error', title: 'Failed to check updates', description: result.error });
     }
   }
 
@@ -529,6 +582,21 @@ export function App() {
                 type="button"
                 variant="ghost"
                 className="h-7 border-transparent px-2 text-[11px] hover:bg-accent"
+                disabled={updateStatus.phase === 'checking' || updateStatus.phase === 'downloading'}
+                onClick={() => void handleUpdateAction()}
+                title={updateStatus.message}
+              >
+                {updateStatus.phase === 'checking' || updateStatus.phase === 'downloading' ? (
+                  <RefreshCw className="size-3.5 animate-spin" />
+                ) : (
+                  <Download className="size-3.5" />
+                )}
+                {formatUpdateActionLabel(updateStatus)}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-7 border-transparent px-2 text-[11px] hover:bg-accent"
                 disabled={activeProject === null || isLoading}
                 onClick={openCreateWorktreeDialog}
               >
@@ -630,6 +698,22 @@ function formatCreateWorktreeCommand(projectPath: string, mode: CreateWorktreeMo
   }
 
   return `$ git -C ${projectPath} worktree add -b ${branch} ${path}`;
+}
+
+function formatUpdateActionLabel(status: UpdateStatus) {
+  if (status.phase === 'checking') {
+    return 'Checking';
+  }
+
+  if (status.phase === 'downloading') {
+    return `${status.percent ?? 0}%`;
+  }
+
+  if (status.phase === 'downloaded') {
+    return 'Restart';
+  }
+
+  return 'Update';
 }
 
 function formatRemoveWorktreeDescription(worktree: WorktreeInfo | null) {

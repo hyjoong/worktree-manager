@@ -1,4 +1,5 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, type IpcMainInvokeEvent, type OpenDialogOptions } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import { join } from 'node:path';
 import {
   copyTextInputSchema,
@@ -15,8 +16,18 @@ import { createWorktree, listWorktrees, openWorktree, removeWorktree, validatePr
 import { handleValidatedIpc } from './ipc/handle';
 import { assertAllowedIpcSender, isAllowedRendererUrl } from './security';
 import { loadProjects, saveProjects } from './settings/projects';
+import { createUpdateService } from './updates/service';
 
 const isDev = process.env.VITE_DEV_SERVER_URL !== undefined;
+const updateService = createUpdateService({
+  updater: autoUpdater,
+  isPackaged: app.isPackaged,
+  broadcast(status) {
+    for (const window of BrowserWindow.getAllWindows()) {
+      window.webContents.send(ipcChannels.updateStatus, status);
+    }
+  },
+});
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -137,8 +148,38 @@ handleValidatedIpc(ipcChannels.copyText, copyTextInputSchema, async (input) => {
   return { ok: true };
 });
 
+ipcMain.handle(ipcChannels.checkForUpdates, async (event: IpcMainInvokeEvent) => {
+  try {
+    assertAllowedIpcSender(event.sender);
+    return await updateService.checkForUpdates();
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Failed to check for updates',
+    };
+  }
+});
+
+ipcMain.handle(ipcChannels.installUpdate, async (event: IpcMainInvokeEvent) => {
+  try {
+    assertAllowedIpcSender(event.sender);
+    return await updateService.installUpdate();
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Failed to install update',
+    };
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
+
+  if (app.isPackaged) {
+    setTimeout(() => {
+      void updateService.checkForUpdates();
+    }, 3000);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
