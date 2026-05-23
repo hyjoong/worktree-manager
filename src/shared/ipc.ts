@@ -13,6 +13,7 @@ export const ipcChannels = {
   checkForUpdates: 'updates:check-for-updates',
   installUpdate: 'updates:install-update',
   updateStatus: 'updates:status',
+  getAppInfo: 'app:get-info',
 } as const;
 
 export const listWorktreesInputSchema = z.object({
@@ -70,6 +71,11 @@ export type UpdateStatus = {
   message: string;
   version?: string;
   percent?: number;
+};
+
+export type AppInfo = {
+  version: string;
+  isPackaged: boolean;
 };
 
 export type WorktreeStatus = 'clean' | 'dirty' | 'bare' | 'detached';
@@ -141,6 +147,16 @@ export type LoadProjectsResult =
       error: string;
     };
 
+export type AppInfoResult =
+  | {
+      ok: true;
+      app: AppInfo;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
 export type WorktreeApi = {
   listWorktrees(input: ListWorktreesInput): Promise<ListWorktreesResult>;
   openWorktree(input: OpenWorktreeInput): Promise<MutationResult>;
@@ -153,6 +169,7 @@ export type WorktreeApi = {
   copyText(input: CopyTextInput): Promise<MutationResult>;
   checkForUpdates(): Promise<MutationResult>;
   installUpdate(): Promise<MutationResult>;
+  getAppInfo(): Promise<AppInfoResult>;
   onUpdateStatus(callback: (status: UpdateStatus) => void): () => void;
   getDroppedFilePath(file: File): string | null;
 };

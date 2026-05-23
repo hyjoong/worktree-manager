@@ -53,6 +53,9 @@ const worktreeApi: WorktreeApi = {
   installUpdate() {
     return ipcRenderer.invoke(ipcChannels.installUpdate);
   },
+  getAppInfo() {
+    return ipcRenderer.invoke(ipcChannels.getAppInfo);
+  },
   onUpdateStatus(callback: (status: UpdateStatus) => void) {
     const listener = (_event: Electron.IpcRendererEvent, status: UpdateStatus) => {
       callback(status);

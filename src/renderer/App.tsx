@@ -22,7 +22,7 @@ import { useEditorStore } from './stores/editor-store';
 import { createRegisteredProject, upsertRecentProject } from './stores/project-store';
 import { useToastStore } from './stores/toast-store';
 import type { RegisteredProject } from './types/project';
-import type { CreateWorktreeMode, EditorId, UpdateStatus, WorktreeInfo } from '../shared/ipc';
+import type { AppInfo, CreateWorktreeMode, EditorId, UpdateStatus, WorktreeInfo } from '../shared/ipc';
 import { getWorktreeRemovalBlocker } from '../shared/worktree-removal';
 
 export function App() {
@@ -30,6 +30,7 @@ export function App() {
   const [activeProject, setActiveProject] = useState<RegisteredProject | null>(null);
   const [worktrees, setWorktrees] = useState<WorktreeInfo[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [detailsView, setDetailsView] = useState<'worktree' | 'app'>('worktree');
   const [pendingRemove, setPendingRemove] = useState<WorktreeInfo | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
@@ -39,6 +40,7 @@ export function App() {
   const [newWorktreePath, setNewWorktreePath] = useState('');
   const [isWorktreePathTouched, setIsWorktreePathTouched] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ phase: 'idle', message: 'Check for updates' });
+  const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { logs, appendLog, clearLogs } = useAppLog();
   const [isLoading, setIsLoading] = useState(false);
@@ -84,15 +86,21 @@ export function App() {
 
     void (async () => {
       appendLog('$ load registered projects');
-      const result = await api.loadProjects();
+      const [projectsResult, appInfoResult] = await Promise.all([api.loadProjects(), api.getAppInfo()]);
 
-      if (result.ok) {
-        setProjects(result.projects);
-        appendLog(`loaded ${result.projects.length} registered projects`);
+      if (projectsResult.ok) {
+        setProjects(projectsResult.projects);
+        appendLog(`loaded ${projectsResult.projects.length} registered projects`);
       } else {
-        setError(result.error);
-        appendLog(`error: ${result.error}`);
-        toast({ tone: 'error', title: 'Failed to load projects', description: result.error });
+        setError(projectsResult.error);
+        appendLog(`error: ${projectsResult.error}`);
+        toast({ tone: 'error', title: 'Failed to load projects', description: projectsResult.error });
+      }
+
+      if (appInfoResult.ok) {
+        setAppInfo(appInfoResult.app);
+      } else {
+        appendLog(`error: ${appInfoResult.error}`);
       }
     })();
   }, []);
@@ -336,6 +344,7 @@ export function App() {
     }
 
     if (updateStatus.phase === 'downloaded') {
+      setDetailsView('app');
       appendLog('$ install downloaded update');
       const result = await api.installUpdate();
 
@@ -346,6 +355,7 @@ export function App() {
       return;
     }
 
+    setDetailsView('app');
     appendLog('$ check for app updates');
     const result = await api.checkForUpdates();
 
@@ -638,12 +648,15 @@ export function App() {
           {!isLoading && worktrees.length > 0 ? (
             <div className="space-y-1.5">
               {worktrees.map((worktree) => (
-                <WorktreeCard
+                  <WorktreeCard
                   key={`${worktree.path}:${worktree.head ?? 'no-head'}`}
                   worktree={worktree}
                   selected={selectedWorktree?.path === worktree.path}
                   editor={editor}
-                  onSelect={(nextWorktree) => setSelectedPath(nextWorktree.path)}
+                  onSelect={(nextWorktree) => {
+                    setSelectedPath(nextWorktree.path);
+                    setDetailsView('worktree');
+                  }}
                   onOpen={(nextWorktree) => void openInEditor(nextWorktree)}
                   onRemove={setPendingRemove}
                 />
@@ -655,8 +668,14 @@ export function App() {
 
       <DetailsPanel
         worktree={selectedWorktree}
+        view={detailsView}
+        appInfo={appInfo}
+        updateStatus={updateStatus}
+        isUpdateActionDisabled={updateStatus.phase === 'checking' || updateStatus.phase === 'downloading'}
+        onViewChange={setDetailsView}
         onOpen={(worktree) => void openInEditor(worktree)}
         onCopyPath={(worktree) => void copyWorktreePath(worktree)}
+        onUpdateAction={() => void handleUpdateAction()}
         editor={editor}
       />
       <div className="col-span-3">

@@ -172,6 +172,24 @@ ipcMain.handle(ipcChannels.installUpdate, async (event: IpcMainInvokeEvent) => {
   }
 });
 
+ipcMain.handle(ipcChannels.getAppInfo, async (event: IpcMainInvokeEvent) => {
+  try {
+    assertAllowedIpcSender(event.sender);
+    return {
+      ok: true,
+      app: {
+        version: app.getVersion(),
+        isPackaged: app.isPackaged,
+      },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Failed to read app info',
+    };
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
 
