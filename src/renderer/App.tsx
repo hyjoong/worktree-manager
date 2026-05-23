@@ -582,21 +582,6 @@ export function App() {
                 type="button"
                 variant="ghost"
                 className="h-7 border-transparent px-2 text-[11px] hover:bg-accent"
-                disabled={updateStatus.phase === 'checking' || updateStatus.phase === 'downloading'}
-                onClick={() => void handleUpdateAction()}
-                title={updateStatus.message}
-              >
-                {updateStatus.phase === 'checking' || updateStatus.phase === 'downloading' ? (
-                  <RefreshCw className="size-3.5 animate-spin" />
-                ) : (
-                  <Download className="size-3.5" />
-                )}
-                {formatUpdateActionLabel(updateStatus)}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-7 border-transparent px-2 text-[11px] hover:bg-accent"
                 disabled={activeProject === null || isLoading}
                 onClick={openCreateWorktreeDialog}
               >
@@ -605,6 +590,22 @@ export function App() {
               </Button>
             </div>
             <EditorSelector editor={editor} onChange={setEditor} />
+            <Button
+              type="button"
+              variant={updateStatus.phase === 'downloaded' ? 'secondary' : 'ghost'}
+              size={updateStatus.phase === 'downloaded' ? undefined : 'icon'}
+              className={`${updateStatus.phase === 'downloaded' ? 'h-7 px-2 text-[11px]' : 'size-7'} border-border/60`}
+              disabled={updateStatus.phase === 'checking' || updateStatus.phase === 'downloading'}
+              onClick={() => void handleUpdateAction()}
+              title={updateStatus.message}
+            >
+              {updateStatus.phase === 'checking' || updateStatus.phase === 'downloading' ? (
+                <RefreshCw className="size-3.5 animate-spin" />
+              ) : (
+                <Download className="size-3.5" />
+              )}
+              {updateStatus.phase === 'downloaded' ? <span>Restart</span> : null}
+            </Button>
             <ThemeToggle />
           </div>
         </header>
@@ -698,22 +699,6 @@ function formatCreateWorktreeCommand(projectPath: string, mode: CreateWorktreeMo
   }
 
   return `$ git -C ${projectPath} worktree add -b ${branch} ${path}`;
-}
-
-function formatUpdateActionLabel(status: UpdateStatus) {
-  if (status.phase === 'checking') {
-    return 'Checking';
-  }
-
-  if (status.phase === 'downloading') {
-    return `${status.percent ?? 0}%`;
-  }
-
-  if (status.phase === 'downloaded') {
-    return 'Restart';
-  }
-
-  return 'Update';
 }
 
 function formatRemoveWorktreeDescription(worktree: WorktreeInfo | null) {
