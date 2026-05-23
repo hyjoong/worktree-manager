@@ -57,6 +57,25 @@ describe('createUpdateService', () => {
     });
   });
 
+  it('shows a concise message when GitHub private releases cannot be read', () => {
+    const updater = new MockUpdater();
+    const broadcast = vi.fn();
+
+    createUpdateService({ updater, isPackaged: true, broadcast });
+
+    updater.emit(
+      'error',
+      new Error(
+        '404 "method: GET url: https://github.com/hyjoong/worktree-manager/releases.atom\\n\\nPlease double check that your authentication token is correct."',
+      ),
+    );
+
+    expect(broadcast).toHaveBeenCalledWith({
+      phase: 'error',
+      message: 'Update check failed because the GitHub release feed is private. Make the release source public or configure a private update provider.',
+    });
+  });
+
   it('installs a downloaded update through the updater', async () => {
     const updater = new MockUpdater();
     const service = createUpdateService({ updater, isPackaged: true, broadcast: vi.fn() });

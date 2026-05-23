@@ -80,7 +80,7 @@ export function createUpdateService({ updater, isPackaged, broadcast }: CreateUp
   updater.on('error', (error) => {
     broadcast({
       phase: 'error',
-      message: error.message,
+      message: formatUpdateError(error),
     });
   });
 
@@ -111,4 +111,12 @@ export function createUpdateService({ updater, isPackaged, broadcast }: CreateUp
 
 function formatVersion(info: UpdateInfo) {
   return info.version ?? 'latest';
+}
+
+function formatUpdateError(error: Error) {
+  if (error.message.includes('releases.atom') && error.message.includes('authentication token')) {
+    return 'Update check failed because the GitHub release feed is private. Make the release source public or configure a private update provider.';
+  }
+
+  return error.message.split('\n')[0] ?? 'Update check failed.';
 }
