@@ -17,6 +17,7 @@ import { useAppLog } from './hooks/use-app-log';
 import { useKeyboardShortcuts } from './hooks/use-keyboard-shortcuts';
 import { useWorktreeApi } from './hooks/use-worktree-api';
 import { buildCommandItems, updateRecentCommandIds, type CommandItem } from './lib/command-palette';
+import { selectInitialProject } from './lib/project-selection';
 import { suggestWorktreePath } from './lib/worktree-path';
 import { useEditorStore } from './stores/editor-store';
 import { createRegisteredProject, upsertRecentProject } from './stores/project-store';
@@ -91,6 +92,12 @@ export function App() {
       if (projectsResult.ok) {
         setProjects(projectsResult.projects);
         appendLog(`loaded ${projectsResult.projects.length} registered projects`);
+
+        const initialProject = selectInitialProject(projectsResult.projects, activeProject?.path ?? null);
+
+        if (initialProject !== null) {
+          await loadWorktrees(initialProject);
+        }
       } else {
         setError(projectsResult.error);
         appendLog(`error: ${projectsResult.error}`);
@@ -544,20 +551,20 @@ export function App() {
       />
 
       <section className="min-h-0 bg-workspace" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
-        <header className="flex h-10 items-center justify-between border-b border-border/80 bg-background/95 px-2.5">
+        <header className="flex h-10 items-center justify-between border-b border-border/80 bg-background/95 px-2">
           <div className="flex min-w-0 items-center gap-2">
             <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-border bg-card">
               <GitBranch className="size-3.5 text-blue-400" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 max-w-[360px]">
               <div className="flex min-w-0 items-center gap-1.5">
-                <h1 className="truncate text-[13px] font-semibold leading-4">{activeProject?.name ?? 'No project selected'}</h1>
+                <h1 className="truncate text-[13px] font-semibold leading-4">{activeProject?.name ?? 'Select project'}</h1>
                 <span className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] leading-3 text-muted-foreground">
-                  {worktrees.length}
+                  {activeProject === null ? projects.length : worktrees.length}
                 </span>
               </div>
               <div className="truncate font-mono text-[10px] leading-3 text-muted-foreground/75">
-                {activeProject?.path ?? 'Register a local Git repository from the sidebar.'}
+                {activeProject?.path ?? (projects.length > 0 ? 'Choose a project from the sidebar' : 'Add or drop a Git repository')}
               </div>
             </div>
           </div>
@@ -634,10 +641,14 @@ export function App() {
 
           {!isLoading && activeProject === null ? (
             <EmptyState
-              title="Add a project folder"
-              description="Click Add Project in the sidebar or drag a Git repository folder here."
+              title={projects.length > 0 ? 'Select a project' : 'Add a project folder'}
+              description={
+                projects.length > 0
+                  ? 'Choose a project from the sidebar to load its worktrees.'
+                  : 'Click Add Project in the sidebar or drag a Git repository folder here.'
+              }
               isDragging={isDraggingProject}
-              onBrowse={() => void browseProjectDirectory()}
+              onBrowse={projects.length > 0 ? undefined : () => void browseProjectDirectory()}
             />
           ) : null}
 

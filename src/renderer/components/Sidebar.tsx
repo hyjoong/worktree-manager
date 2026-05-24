@@ -62,14 +62,14 @@ export function Sidebar({
         </span>
       </div>
 
-      <div className={`mb-2 rounded-lg border border-border bg-card p-1.5 ${isDraggingProject ? 'border-blue-500/60 bg-blue-500/10' : ''}`}>
+      <div className={`mb-2 rounded-md border border-border bg-card/85 p-1 ${isDraggingProject ? 'border-blue-500/60 bg-blue-500/10' : ''}`}>
         <div className="flex items-center gap-1.5">
-          <Button type="button" className="h-7 flex-1 justify-start" onClick={onBrowse} disabled={isLoading}>
+          <Button type="button" className="h-7 flex-1 justify-start px-2 text-[11px]" onClick={onBrowse} disabled={isLoading}>
             <FolderOpen className="size-3.5" />
             Add Project
           </Button>
         </div>
-        <div className="mt-1.5 rounded border border-dashed border-border/80 px-2 py-1 text-center text-[10.5px] text-muted-foreground/80">
+        <div className="mt-1 rounded border border-dashed border-border/70 px-2 py-0.5 text-center text-[10px] leading-4 text-muted-foreground/75">
           {isDraggingProject ? 'Drop to register' : 'Drop folder here'}
         </div>
       </div>
@@ -137,13 +137,17 @@ function ProjectRow({
     <button
       type="button"
       onClick={() => onSelect(project)}
-      className={`group flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-left text-xs transition-[background-color,border-color,color] duration-150 ${
+      className={`group flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-left text-xs transition-[background-color,border-color,color,box-shadow] duration-150 ${
         active
-          ? 'border-blue-500/45 bg-blue-500/10 text-foreground shadow-[inset_2px_0_0_rgb(96_165_250)]'
-          : 'border-transparent text-muted-foreground hover:border-border hover:bg-accent/45 hover:text-foreground'
+          ? 'border-blue-400/55 bg-blue-500/[0.14] text-foreground shadow-[inset_2px_0_0_rgb(96_165_250)]'
+          : 'border-transparent text-muted-foreground hover:border-border/90 hover:bg-accent/55 hover:text-foreground'
       }`}
     >
-      <span className="flex size-5 shrink-0 items-center justify-center rounded border border-border bg-background text-muted-foreground group-hover:text-foreground">
+      <span
+        className={`flex size-5 shrink-0 items-center justify-center rounded border bg-background ${
+          active ? 'border-blue-400/45 text-blue-300' : 'border-border text-muted-foreground group-hover:text-foreground'
+        }`}
+      >
         <FolderGit2 className="size-3" />
       </span>
       <span className="min-w-0 flex-1">
