@@ -19,6 +19,7 @@ import { loadProjects, saveProjects } from './settings/projects';
 import { createUpdateService } from './updates/service';
 
 const isDev = process.env.VITE_DEV_SERVER_URL !== undefined;
+let mainWindow: BrowserWindow | null = null;
 const updateService = createUpdateService({
   updater: autoUpdater,
   isPackaged: app.isPackaged,
@@ -30,7 +31,7 @@ const updateService = createUpdateService({
 });
 
 function createWindow() {
-  const window = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1120,
     height: 760,
     minWidth: 860,
@@ -44,13 +45,17 @@ function createWindow() {
     },
   });
 
-  window.webContents.on('will-navigate', (event, url) => {
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
     if (!isAllowedRendererUrl(url)) {
       event.preventDefault();
     }
   });
 
-  window.webContents.setWindowOpenHandler(() => {
+  mainWindow.webContents.setWindowOpenHandler(() => {
     return { action: 'deny' };
   });
 
@@ -61,10 +66,10 @@ function createWindow() {
       throw new Error(`Refusing to load unexpected renderer URL: ${devServerUrl}`);
     }
 
-    void window.loadURL(devServerUrl);
-    window.webContents.openDevTools({ mode: 'detach' });
+    void mainWindow.loadURL(devServerUrl);
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    void window.loadFile(join(__dirname, '../renderer/index.html'));
+    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 }
 
