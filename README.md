@@ -15,6 +15,7 @@
 - `Cmd+K` Raycast 스타일 command palette
 - 프로젝트/워크트리/액션 검색
 - 프로젝트 목록 로컬 저장
+- 마지막으로 선택한 프로젝트 자동 복원
 - Git 명령 실행 로그 콘솔
 - GitHub Releases 기반 앱 업데이트 확인
 - 다크모드/라이트모드
@@ -30,7 +31,7 @@ macOS Apple Silicon용 파일:
 - `Worktree.Manager-*-mac-arm64.dmg`
 - `Worktree.Manager-*-mac-arm64.zip`
 
-v0.1.8 이후 배포 빌드는 Apple Developer ID 서명과 notarization을 적용하는 것을 목표로 합니다. 이전 unsigned 빌드는 처음 실행할 때 macOS 보안 경고가 뜰 수 있습니다.
+v0.1.8 이후 배포 빌드는 Apple Developer ID 서명과 notarization을 적용합니다. 이전 unsigned 빌드는 처음 실행할 때 macOS 보안 경고가 뜰 수 있습니다.
 
 ## 요구사항
 
@@ -89,14 +90,14 @@ macOS 배포 파일 생성:
 pnpm dist:mac
 ```
 
-Apple Developer ID 서명과 notarization을 적용하려면 아래 환경변수가 필요합니다.
+Apple Developer ID 서명과 notarization을 적용하려면 로컬 Keychain에 notary profile을 저장한 뒤 빌드합니다.
 
 ```bash
-export APPLE_ID="your-apple-account@example.com"
-export APPLE_TEAM_ID="6W9KP3964C"
-export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+export APPLE_KEYCHAIN_PROFILE="worktree-manager-notary"
 pnpm dist:mac
 ```
+
+인증서는 로컬 Keychain 또는 `CSC_LINK`/`CSC_KEY_PASSWORD` 환경변수로 제공해야 합니다. 앱 암호, p12 비밀번호, GitHub 토큰 같은 민감 정보는 저장소에 커밋하지 않습니다.
 
 로컬 unsigned 빌드가 필요할 때는 별도 스크립트를 사용합니다.
 
