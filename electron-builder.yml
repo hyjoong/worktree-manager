@@ -1,6 +1,6 @@
 appId: com.hyjoong.worktree-manager
 productName: Worktree Manager
-artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+artifactName: Worktree-Manager-${version}-${os}-${arch}.${ext}
 asar: true
 npmRebuild: false
 extraMetadata:
@@ -29,7 +29,7 @@ mac:
       arch:
         - arm64
 dmg:
-  sign: false
+  sign: true
 publish:
   provider: github
   owner: hyjoong
