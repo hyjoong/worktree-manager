@@ -39,7 +39,7 @@ describe('createUpdateService', () => {
     });
   });
 
-  it('does not check for updates from the development app', async () => {
+  it('reports an informational status instead of an error in the development app', async () => {
     const updater = new MockUpdater();
     const broadcast = vi.fn();
     const service = createUpdateService({ updater, isPackaged: false, broadcast });
@@ -52,7 +52,7 @@ describe('createUpdateService', () => {
     });
     expect(updater.checkForUpdates).not.toHaveBeenCalled();
     expect(broadcast).toHaveBeenCalledWith({
-      phase: 'error',
+      phase: 'idle',
       message: 'Auto updates are only available in the packaged app.',
     });
   });

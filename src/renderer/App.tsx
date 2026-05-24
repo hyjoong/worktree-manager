@@ -19,6 +19,7 @@ import { useWorktreeApi } from './hooks/use-worktree-api';
 import { buildCommandItems, updateRecentCommandIds, type CommandItem } from './lib/command-palette';
 import { selectInitialProject } from './lib/project-selection';
 import { suggestWorktreePath } from './lib/worktree-path';
+import { useActiveProjectStore } from './stores/active-project-store';
 import { useEditorStore } from './stores/editor-store';
 import { createRegisteredProject, upsertRecentProject } from './stores/project-store';
 import { useToastStore } from './stores/toast-store';
@@ -47,6 +48,7 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDraggingProject, setIsDraggingProject] = useState(false);
   const { editor, setEditor } = useEditorStore();
+  const { activeProjectPath, setActiveProjectPath } = useActiveProjectStore();
   const toast = useToastStore((state) => state.push);
   const { readWorktreeApi } = useWorktreeApi({
     setError,
@@ -93,7 +95,7 @@ export function App() {
         setProjects(projectsResult.projects);
         appendLog(`loaded ${projectsResult.projects.length} registered projects`);
 
-        const initialProject = selectInitialProject(projectsResult.projects, activeProject?.path ?? null);
+        const initialProject = selectInitialProject(projectsResult.projects, activeProjectPath);
 
         if (initialProject !== null) {
           await loadWorktrees(initialProject);
@@ -170,6 +172,7 @@ export function App() {
 
       if (result.ok) {
         setActiveProject(project);
+        setActiveProjectPath(project.path);
         setWorktrees(result.worktrees);
         setSelectedPath(result.worktrees[0]?.path ?? null);
         if (options.registerProject === true) {

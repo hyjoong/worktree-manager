@@ -168,7 +168,7 @@ function AppInfoPanel({
           </div>
           <div className="mt-1 text-xs text-muted-foreground">Version and update status</div>
         </div>
-        <Badge variant={updateStatus.phase === 'error' ? 'dirty' : 'clean'}>{formatUpdateBadge(updateStatus)}</Badge>
+        <Badge variant={updateStatus.phase === 'error' ? 'dirty' : 'clean'}>{formatUpdateBadge(updateStatus, appInfo)}</Badge>
       </CardHeader>
       <CardContent className="min-h-0 flex-1 space-y-4 overflow-auto text-xs">
         <Detail label="Current version" value={appInfo?.version ?? '-'} mono />
@@ -181,13 +181,15 @@ function AppInfoPanel({
               <span className="font-medium">{formatUpdateTitle(updateStatus)}</span>
               {updateStatus.percent !== undefined ? <span className="font-mono text-[11px] text-muted-foreground">{updateStatus.percent}%</span> : null}
             </div>
-            <div className="mt-1 leading-5 text-muted-foreground">{updateStatus.message}</div>
+            <div className="mt-1 leading-5 text-muted-foreground">{formatUpdateMessage(updateStatus, appInfo)}</div>
             {updateStatus.version !== undefined ? <div className="mt-1 font-mono text-[11px] text-blue-400">latest {updateStatus.version}</div> : null}
           </div>
         </div>
 
         <div className="rounded-md border border-border bg-background p-2 leading-5 text-muted-foreground">
-          최초 설치는 DMG로 진행하고, 이후 업데이트는 앱이 GitHub Releases의 ZIP을 내려받아 재시작 시 적용합니다.
+          {appInfo?.isPackaged === true
+            ? '업데이트가 있으면 앱이 GitHub Releases의 ZIP을 내려받고, 재시작 시 새 버전을 적용합니다.'
+            : '개발 환경에서는 자동 업데이트를 실행하지 않습니다. 배포된 앱에서만 업데이트 확인이 가능합니다.'}
         </div>
 
         <Button type="button" variant="secondary" className="w-full" disabled={isUpdateActionDisabled} onClick={onUpdateAction}>
@@ -203,7 +205,11 @@ function AppInfoPanel({
   );
 }
 
-function formatUpdateBadge(status: UpdateStatus) {
+function formatUpdateBadge(status: UpdateStatus, appInfo: AppInfo | null) {
+  if (appInfo?.isPackaged === false) {
+    return 'dev';
+  }
+
   if (status.phase === 'downloaded') {
     return 'ready';
   }
@@ -225,6 +231,14 @@ function formatUpdateTitle(status: UpdateStatus) {
   }
 
   return status.phase.replaceAll('-', ' ');
+}
+
+function formatUpdateMessage(status: UpdateStatus, appInfo: AppInfo | null) {
+  if (appInfo?.isPackaged === false && status.phase === 'idle') {
+    return 'Development app에서는 업데이트 확인을 건너뜁니다. DMG로 설치한 packaged app에서 확인하세요.';
+  }
+
+  return status.message;
 }
 
 function Detail({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {

@@ -88,7 +88,7 @@ export function createUpdateService({ updater, isPackaged, broadcast }: CreateUp
     async checkForUpdates(): Promise<MutationResult> {
       if (!isPackaged) {
         const error = 'Auto updates are only available in the packaged app.';
-        broadcast({ phase: 'error', message: error });
+        broadcast({ phase: 'idle', message: error });
         return { ok: false, error };
       }
 
