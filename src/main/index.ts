@@ -198,12 +198,6 @@ ipcMain.handle(ipcChannels.getAppInfo, async (event: IpcMainInvokeEvent) => {
 app.whenReady().then(() => {
   createWindow();
 
-  if (app.isPackaged) {
-    setTimeout(() => {
-      void updateService.checkForUpdates();
-    }, 3000);
-  }
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();

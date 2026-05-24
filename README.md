@@ -151,7 +151,7 @@ src/
 앱 업데이트는 `electron-updater`를 사용합니다.
 
 - 최초 설치는 `dmg`를 사용합니다.
-- 이후 앱 실행 시 자동으로 업데이트를 확인하고, 앱 내부 `Update` 버튼으로도 GitHub Releases의 최신 버전을 확인할 수 있습니다.
+- 이후 앱 내부 `Update` 버튼으로 GitHub Releases의 최신 버전을 확인할 수 있습니다.
 - macOS 자동 업데이트 메타데이터 생성을 위해 `zip` 타깃을 함께 유지합니다.
 - 앱 업데이트 산출물은 public 저장소인 `hyjoong/worktree-manager-releases`에 업로드합니다.
 - 소스 코드 저장소는 private으로 유지하고, 앱이 인증 없이 읽어야 하는 릴리즈 피드와 배포 파일만 public으로 제공합니다.
