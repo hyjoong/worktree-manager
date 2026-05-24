@@ -64,10 +64,11 @@ function findPnpmCommand() {
 
 const pnpm = findPnpmCommand();
 
+const isUnsignedBuild = process.env.WORKTREE_MANAGER_UNSIGNED === "1";
 const env = {
   ...process.env,
   PATH: pnpm.envPath,
-  CSC_IDENTITY_AUTO_DISCOVERY: "false",
+  ...(isUnsignedBuild ? { CSC_IDENTITY_AUTO_DISCOVERY: "false" } : {}),
 };
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
 const releaseDir = join("release", packageJson.version);

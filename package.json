@@ -1,6 +1,6 @@
 {
   "name": "worktree-manager",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "productName": "Worktree Manager",
   "description": "A desktop productivity app for managing Git worktrees.",
   "author": "hyjoong",
@@ -16,6 +16,7 @@
     "dist": "node scripts/package.mjs",
     "dist:dir": "node scripts/package.mjs --dir",
     "dist:mac": "node scripts/package.mjs --mac",
+    "dist:mac:unsigned": "WORKTREE_MANAGER_UNSIGNED=1 node scripts/package.mjs --mac -c.mac.identity=null -c.mac.notarize=false",
     "dist:publish": "node scripts/package.mjs --mac --publish always",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json"

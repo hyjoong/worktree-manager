@@ -30,7 +30,7 @@ macOS Apple Silicon용 파일:
 - `Worktree.Manager-*-mac-arm64.dmg`
 - `Worktree.Manager-*-mac-arm64.zip`
 
-현재 빌드는 아직 Apple Developer ID 서명과 notarization을 하지 않은 상태입니다. 처음 실행할 때 macOS 보안 경고가 뜰 수 있습니다.
+v0.1.8 이후 배포 빌드는 Apple Developer ID 서명과 notarization을 적용하는 것을 목표로 합니다. 이전 unsigned 빌드는 처음 실행할 때 macOS 보안 경고가 뜰 수 있습니다.
 
 ## 요구사항
 
@@ -87,6 +87,21 @@ macOS 배포 파일 생성:
 
 ```bash
 pnpm dist:mac
+```
+
+Apple Developer ID 서명과 notarization을 적용하려면 아래 환경변수가 필요합니다.
+
+```bash
+export APPLE_ID="your-apple-account@example.com"
+export APPLE_TEAM_ID="6W9KP3964C"
+export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+pnpm dist:mac
+```
+
+로컬 unsigned 빌드가 필요할 때는 별도 스크립트를 사용합니다.
+
+```bash
+pnpm dist:mac:unsigned
 ```
 
 GitHub Releases에 배포 파일 업로드:
@@ -146,7 +161,8 @@ src/
 - macOS `dmg`, `zip` target
 - custom `build/icon.icns`
 - GitHub Releases publish 설정: `hyjoong/worktree-manager-releases`
-- 현재는 unsigned local distribution
+- Apple Developer ID signing과 notarization 적용
+- unsigned 로컬 빌드는 `pnpm dist:mac:unsigned` 사용
 
 앱 업데이트는 `electron-updater`를 사용합니다.
 
@@ -156,4 +172,9 @@ src/
 - 앱 업데이트 산출물은 public 저장소인 `hyjoong/worktree-manager-releases`에 업로드합니다.
 - 소스 코드 저장소는 private으로 유지하고, 앱이 인증 없이 읽어야 하는 릴리즈 피드와 배포 파일만 public으로 제공합니다.
 
-외부 사용자에게 자연스럽게 배포하려면 다음 단계로 Apple Developer ID signing과 notarization을 추가해야 합니다.
+공증 상태 확인:
+
+```bash
+spctl --assess --verbose=4 "release/<version>/mac-arm64/Worktree Manager.app"
+spctl --assess --verbose=4 --type open "release/<version>/Worktree Manager-<version>-mac-arm64.dmg"
+```
