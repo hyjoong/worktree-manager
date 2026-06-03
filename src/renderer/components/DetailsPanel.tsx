@@ -2,6 +2,7 @@ import { Copy, Download, ExternalLink, GitBranch, GitCommitHorizontal, Info, Ref
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader } from './ui/card';
+import { getAppTabIndicator, getAppTabIndicatorClass, type AppTabIndicator } from '../lib/update-status';
 import type { AppInfo, EditorId, UpdateStatus, WorktreeInfo } from '../../shared/ipc';
 
 type DetailsPanelProps = {
@@ -31,7 +32,7 @@ export function DetailsPanel({
 }: DetailsPanelProps) {
   if (view === 'app') {
     return (
-      <PanelShell view={view} onViewChange={onViewChange}>
+      <PanelShell view={view} updateStatus={updateStatus} onViewChange={onViewChange}>
         <AppInfoPanel
           appInfo={appInfo}
           updateStatus={updateStatus}
@@ -44,7 +45,7 @@ export function DetailsPanel({
 
   if (worktree === null) {
     return (
-      <PanelShell view={view} onViewChange={onViewChange}>
+      <PanelShell view={view} updateStatus={updateStatus} onViewChange={onViewChange}>
         <Card className="min-h-0 flex-1">
           <CardContent className="flex h-full items-center justify-center p-6 text-center text-xs text-muted-foreground">
             Select a worktree to inspect details.
@@ -55,7 +56,7 @@ export function DetailsPanel({
   }
 
   return (
-    <PanelShell view={view} onViewChange={onViewChange}>
+    <PanelShell view={view} updateStatus={updateStatus} onViewChange={onViewChange}>
       <Card className="flex h-full min-h-0 flex-col">
         <CardHeader>
           <div className="min-w-0">
@@ -111,10 +112,12 @@ export function DetailsPanel({
 
 function PanelShell({
   view,
+  updateStatus,
   children,
   onViewChange,
 }: {
   view: 'worktree' | 'app';
+  updateStatus: UpdateStatus;
   children: React.ReactNode;
   onViewChange(view: 'worktree' | 'app'): void;
 }) {
@@ -124,7 +127,7 @@ function PanelShell({
         <PanelTab active={view === 'worktree'} onClick={() => onViewChange('worktree')}>
           Worktree
         </PanelTab>
-        <PanelTab active={view === 'app'} onClick={() => onViewChange('app')}>
+        <PanelTab active={view === 'app'} indicator={getAppTabIndicator(updateStatus)} onClick={() => onViewChange('app')}>
           App
         </PanelTab>
       </div>
@@ -133,16 +136,27 @@ function PanelShell({
   );
 }
 
-function PanelTab({ active, children, onClick }: { active: boolean; children: string; onClick(): void }) {
+function PanelTab({
+  active,
+  indicator = 'none',
+  children,
+  onClick,
+}: {
+  active: boolean;
+  indicator?: AppTabIndicator;
+  children: string;
+  onClick(): void;
+}) {
   return (
     <button
       type="button"
-      className={`h-7 flex-1 rounded px-2 text-xs font-medium transition ${
+      className={`relative h-7 flex-1 rounded px-2 text-xs font-medium transition ${
         active ? 'border border-border bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
       }`}
       onClick={onClick}
     >
       {children}
+      {indicator !== 'none' ? <span className={`absolute right-2 top-2 size-1.5 rounded-full ${getAppTabIndicatorClass(indicator)}`} /> : null}
     </button>
   );
 }

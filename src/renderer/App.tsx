@@ -1,5 +1,5 @@
 import { DragEvent, useEffect, useMemo, useState } from 'react';
-import { CircleAlert, Download, GitBranch, GitBranchPlus, RefreshCw, Search } from 'lucide-react';
+import { CircleAlert, GitBranch, GitBranchPlus, RefreshCw, Search } from 'lucide-react';
 import { CommandPalette } from './components/CommandPalette';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { CreateWorktreeDialog } from './components/CreateWorktreeDialog';
@@ -610,22 +610,6 @@ export function App() {
               </Button>
             </div>
             <EditorSelector editor={editor} onChange={setEditor} />
-            <Button
-              type="button"
-              variant={updateStatus.phase === 'downloaded' ? 'secondary' : 'ghost'}
-              size={updateStatus.phase === 'downloaded' ? undefined : 'icon'}
-              className={`${updateStatus.phase === 'downloaded' ? 'h-7 px-2 text-[11px]' : 'size-7'} border-border/60`}
-              disabled={updateStatus.phase === 'checking' || updateStatus.phase === 'downloading'}
-              onClick={() => void handleUpdateAction()}
-              title={updateStatus.message}
-            >
-              {updateStatus.phase === 'checking' || updateStatus.phase === 'downloading' ? (
-                <RefreshCw className="size-3.5 animate-spin" />
-              ) : (
-                <Download className="size-3.5" />
-              )}
-              {updateStatus.phase === 'downloaded' ? <span>Restart</span> : null}
-            </Button>
             <ThemeToggle />
           </div>
         </header>
