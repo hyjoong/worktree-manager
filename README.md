@@ -1,43 +1,47 @@
 # Worktree Manager
 
-로컬 Git worktree를 관리하기 위한 macOS 데스크톱 앱입니다.
+로컬 Git worktree를 편하게 관리하려고 만든 macOS 데스크톱 앱입니다.
 
-하나의 Git 레포에서 여러 작업 폴더를 만들어 브랜치별 작업, 리뷰, 실험, 기능 개발을 병렬로 진행하는 흐름을 더 편하게 관리하려고 만든 개발자용 생산성 앱입니다.
+하나의 레포에서 여러 브랜치를 동시에 다루다 보면 `git worktree` 명령을 자주 쓰게 됩니다. 기능 개발, 리뷰, 실험 작업을 각각 다른 폴더에서 열어두고 싶을 때 터미널 명령을 반복하지 않고, 현재 worktree 상태를 한 화면에서 보기 위해 만들었습니다.
+
+## 이런 용도로 씁니다
+
+- 같은 프로젝트에서 여러 기능 브랜치를 동시에 작업할 때
+- 리뷰용 브랜치와 개발 중인 브랜치를 분리해서 열어두고 싶을 때
+- Cursor 또는 VS Code에서 worktree 폴더를 바로 열고 싶을 때
+- worktree가 dirty인지, 어떤 브랜치인지, 마지막 커밋이 무엇인지 빠르게 확인하고 싶을 때
 
 ## 주요 기능
 
-- 로컬 Git 프로젝트 등록
+- Git 프로젝트 등록 및 최근 프로젝트 저장
+- Finder에서 프로젝트 폴더 드롭 등록
 - `git worktree list --porcelain` 기반 worktree 목록 표시
-- worktree path, branch, status, dirty 여부, 마지막 commit 표시
-- 새 브랜치 또는 기존 브랜치 기반 worktree 생성
-- worktree 삭제
+- branch, path, HEAD, clean/dirty/detached/bare 상태, 마지막 커밋 표시
+- 새 브랜치 또는 기존 브랜치로 worktree 생성
+- 브랜치 이름 기반 worktree 경로 자동 추천
+- clean 상태의 non-main worktree 삭제
 - Cursor 또는 VS Code로 worktree 열기
-- `Cmd+K` Raycast 스타일 command palette
-- 프로젝트/워크트리/액션 검색
-- 프로젝트 목록 로컬 저장
-- 마지막으로 선택한 프로젝트 자동 복원
+- worktree path 복사
+- `Cmd+K` 커맨드 팔레트
 - Git 명령 실행 로그 콘솔
-- GitHub Releases 기반 앱 업데이트 확인
+- 우측 `App` 탭에서 GitHub Releases 기반 업데이트 확인
 - 다크모드/라이트모드
 
 ## 다운로드
 
-최신 릴리즈:
+최신 릴리즈는 아래에서 받을 수 있습니다.
 
 https://github.com/hyjoong/worktree-manager-releases/releases/latest
 
-macOS Apple Silicon용 파일:
+현재 배포 대상은 macOS Apple Silicon입니다. 처음 설치할 때는 `dmg` 파일을 사용하면 됩니다.
 
-- `Worktree.Manager-*-mac-arm64.dmg`
-- `Worktree.Manager-*-mac-arm64.zip`
-
-v0.1.8 이후 배포 빌드는 Apple Developer ID 서명과 notarization을 적용합니다. 이전 unsigned 빌드는 처음 실행할 때 macOS 보안 경고가 뜰 수 있습니다.
+v0.1.8 이후 배포 빌드는 Apple Developer ID signing과 notarization을 적용합니다. 이전 unsigned 빌드는 처음 실행할 때 macOS 보안 경고가 표시될 수 있습니다.
 
 ## 요구사항
 
 - macOS Apple Silicon
 - Git
-- Cursor 또는 VS Code
+- Cursor 또는 Visual Studio Code
 
 Git은 터미널에서 실행 가능한 상태여야 합니다.
 
@@ -47,26 +51,18 @@ git --version
 
 ## 기본 사용 흐름
 
-1. 사이드바에서 `Add Project`를 눌러 Git 프로젝트 폴더를 등록합니다.
-2. 중앙 목록에서 현재 worktree 상태를 확인합니다.
-3. `New`를 눌러 worktree를 생성합니다.
-4. 새 브랜치를 만들 때는 `New branch`, 이미 있는 브랜치를 다른 폴더로 체크아웃할 때는 `Existing branch`를 선택합니다.
-5. branch name을 입력하면 같은 부모 폴더 기준으로 worktree path가 자동 추천됩니다.
-6. 필요한 worktree를 Cursor 또는 VS Code로 엽니다.
+1. `Add Project`로 Git 프로젝트 폴더를 등록합니다.
+2. 중앙 목록에서 현재 프로젝트의 worktree 상태를 확인합니다.
+3. `New`를 눌러 새 worktree를 만듭니다.
+4. 새 브랜치를 만들 때는 `New branch`, 기존 브랜치를 체크아웃할 때는 `Existing branch`를 선택합니다.
+5. 필요한 worktree를 Cursor 또는 VS Code로 엽니다.
 
-예를 들어 `/Users/me/Desktop/teacher-gguge-front` 프로젝트에서 `feature/login` 브랜치를 입력하면 기본 경로는 `/Users/me/Desktop/teacher-gguge-front-feature-login` 형태로 제안됩니다.
+예를 들어 `/Users/me/Desktop/my-app` 프로젝트에서 `feature/login` 브랜치를 입력하면 기본 경로는 `/Users/me/Desktop/my-app-feature-login` 형태로 제안됩니다.
 
 ## 개발
 
-의존성 설치:
-
 ```bash
 pnpm install
-```
-
-Electron 개발 환경 실행:
-
-```bash
 pnpm dev
 ```
 
@@ -84,98 +80,44 @@ macOS 앱 아이콘 재생성:
 pnpm icon:mac
 ```
 
+## 배포 메모
+
 macOS 배포 파일 생성:
 
 ```bash
 pnpm dist:mac
 ```
 
-Apple Developer ID 서명과 notarization을 적용하려면 로컬 Keychain에 notary profile을 저장한 뒤 빌드합니다.
-
-```bash
-export APPLE_KEYCHAIN_PROFILE="worktree-manager-notary"
-pnpm dist:mac
-```
-
-인증서는 로컬 Keychain 또는 `CSC_LINK`/`CSC_KEY_PASSWORD` 환경변수로 제공해야 합니다. 앱 암호, p12 비밀번호, GitHub 토큰 같은 민감 정보는 저장소에 커밋하지 않습니다.
-
-로컬 unsigned 빌드가 필요할 때는 별도 스크립트를 사용합니다.
+로컬 unsigned 빌드:
 
 ```bash
 pnpm dist:mac:unsigned
 ```
 
-GitHub Releases에 배포 파일 업로드:
+GitHub Releases 업로드:
 
 ```bash
 GH_TOKEN=<github-token> pnpm dist:publish
 ```
 
-생성된 파일은 아래 경로에 저장됩니다.
+산출물은 `release/<version>/` 아래에 생성됩니다. 앱 업데이트는 `electron-updater`를 사용하고, 배포 파일은 public release 저장소인 `hyjoong/worktree-manager-releases`에 업로드합니다.
 
-```text
-release/<version>/
-```
+## 기술 메모
+
+- Electron main, preload, renderer를 분리합니다.
+- renderer는 Node API에 직접 접근하지 않습니다.
+- preload에서 타입이 지정된 `worktreeApi`만 노출합니다.
+- IPC 입력은 `zod`로 검증합니다.
+- Git 명령은 `execa`로 실행합니다.
+- shell 문자열 조합 대신 args 배열 방식으로 실행합니다.
+- 등록한 프로젝트 목록은 Electron app data에 저장합니다.
 
 ## 프로젝트 구조
 
 ```text
 src/
-  main/
-    git/
-    ipc/
-    settings/
-  preload/
-  renderer/
-    components/
-    hooks/
-    lib/
-    stores/
-    types/
-  shared/
-```
-
-## 구현 메모
-
-- Electron main, preload, renderer를 분리합니다.
-- renderer에서는 Node API에 직접 접근하지 않습니다.
-- preload에서 타입이 지정된 API만 노출합니다.
-- IPC input은 `zod`로 검증합니다.
-- Git 명령은 `execa`로 실행합니다.
-- shell 문자열 조합 대신 args 배열 방식으로 실행합니다.
-- 등록한 프로젝트 목록은 Electron app data에 저장합니다.
-
-## 보안 메모
-
-- `contextIsolation` 활성화
-- `nodeIntegration` 비활성화
-- Electron sandbox 활성화
-- IPC sender 검증
-- renderer navigation 제한
-- 외부 window open 차단
-
-## 패키징
-
-`electron-builder`를 사용합니다.
-
-- `asar: true`
-- macOS `dmg`, `zip` target
-- custom `build/icon.icns`
-- GitHub Releases publish 설정: `hyjoong/worktree-manager-releases`
-- Apple Developer ID signing과 notarization 적용
-- unsigned 로컬 빌드는 `pnpm dist:mac:unsigned` 사용
-
-앱 업데이트는 `electron-updater`를 사용합니다.
-
-- 최초 설치는 `dmg`를 사용합니다.
-- 이후 앱 내부 `Update` 버튼으로 GitHub Releases의 최신 버전을 확인할 수 있습니다.
-- macOS 자동 업데이트 메타데이터 생성을 위해 `zip` 타깃을 함께 유지합니다.
-- 앱 업데이트 산출물은 public 저장소인 `hyjoong/worktree-manager-releases`에 업로드합니다.
-- 소스 코드 저장소는 private으로 유지하고, 앱이 인증 없이 읽어야 하는 릴리즈 피드와 배포 파일만 public으로 제공합니다.
-
-공증 상태 확인:
-
-```bash
-spctl --assess --verbose=4 "release/<version>/mac-arm64/Worktree Manager.app"
-spctl --assess --verbose=4 --type open "release/<version>/Worktree Manager-<version>-mac-arm64.dmg"
+  main/       Electron main process, Git command, IPC, settings, updates
+  preload/    renderer에 노출하는 안전한 API
+  renderer/   React UI, components, hooks, stores
+  shared/     main/renderer가 함께 쓰는 타입과 정책
 ```
