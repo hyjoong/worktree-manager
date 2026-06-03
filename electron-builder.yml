@@ -33,4 +33,4 @@ dmg:
 publish:
   provider: github
   owner: hyjoong
-  repo: worktree-manager-releases
+  repo: worktree-manager

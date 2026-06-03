@@ -31,7 +31,7 @@
 
 최신 릴리즈는 아래에서 받을 수 있습니다.
 
-https://github.com/hyjoong/worktree-manager-releases/releases/latest
+https://github.com/hyjoong/worktree-manager/releases/latest
 
 현재 배포 대상은 macOS Apple Silicon입니다. 처음 설치할 때는 `dmg` 파일을 사용하면 됩니다.
 
@@ -100,7 +100,7 @@ GitHub Releases 업로드:
 GH_TOKEN=<github-token> pnpm dist:publish
 ```
 
-산출물은 `release/<version>/` 아래에 생성됩니다. 앱 업데이트는 `electron-updater`를 사용하고, 배포 파일은 public release 저장소인 `hyjoong/worktree-manager-releases`에 업로드합니다.
+산출물은 `release/<version>/` 아래에 생성됩니다. 앱 업데이트는 `electron-updater`를 사용하고, 배포 파일은 이 저장소의 GitHub Releases에 업로드합니다.
 
 ## 기술 메모
 
