@@ -21,6 +21,7 @@ type CreateWorktreeDialogProps = {
   onPathChange(path: string): void;
   onPathSuggestionSelect(path: string): void;
   onCreate(): void;
+  onCreateAndOpen(): void;
 };
 
 export function CreateWorktreeDialog({
@@ -38,10 +39,12 @@ export function CreateWorktreeDialog({
   onPathChange,
   onPathSuggestionSelect,
   onCreate,
+  onCreateAndOpen,
 }: CreateWorktreeDialogProps) {
   const [isCustomPathOpen, setIsCustomPathOpen] = useState(false);
   const [branchQuery, setBranchQuery] = useState('');
   const isNewBranchMode = mode === 'new';
+  const isCreateDisabled = isLoading || branch.trim().length === 0 || path.trim().length === 0;
   const pathSuggestions = useMemo(() => suggestWorktreePathOptions(projectPath, branch), [branch, projectPath]);
   const filteredBranches = useMemo(() => {
     const normalizedQuery = branchQuery.trim().toLowerCase();
@@ -153,7 +156,10 @@ export function CreateWorktreeDialog({
                 Cancel
               </Button>
             </Dialog.Close>
-            <Button type="button" disabled={isLoading || branch.trim().length === 0 || path.trim().length === 0} onClick={onCreate}>
+            <Button type="button" variant="secondary" disabled={isCreateDisabled} onClick={onCreateAndOpen}>
+              Create & Open
+            </Button>
+            <Button type="button" disabled={isCreateDisabled} onClick={onCreate}>
               Create
             </Button>
           </div>

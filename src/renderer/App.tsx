@@ -441,7 +441,7 @@ export function App() {
     }
   }
 
-  async function createNewWorktree() {
+  async function createNewWorktree(options: { openAfterCreate?: boolean } = {}) {
     if (activeProject === null) {
       return;
     }
@@ -463,17 +463,32 @@ export function App() {
 
     setIsLoading(true);
     const result = await api.createWorktree({ projectPath: activeProject.path, mode: createMode, branch, path });
-    setIsLoading(false);
 
     if (result.ok) {
+      if (options.openAfterCreate === true) {
+        appendLog(`$ open -a ${editor === 'cursor' ? 'Cursor' : 'Visual Studio Code'} ${path}`);
+        const openResult = await api.openWorktree({ path, editor });
+
+        if (openResult.ok) {
+          toast({ tone: 'success', title: `Opened in ${editor === 'cursor' ? 'Cursor' : 'VS Code'}`, description: path });
+        } else {
+          appendLog(`error: ${openResult.error}`);
+          toast({ tone: 'error', title: `Failed to open ${editor === 'cursor' ? 'Cursor' : 'VS Code'}`, description: openResult.error });
+        }
+      }
+
+      setIsLoading(false);
       setIsCreateOpen(false);
       setCreateMode('new');
       setNewBranch('');
       setNewWorktreePath('');
       setIsWorktreePathTouched(false);
+      setDetailsView('worktree');
       toast({ tone: 'success', title: 'Worktree created', description: branch });
       await loadWorktrees(activeProject);
+      setSelectedPath(path);
     } else {
+      setIsLoading(false);
       setError(result.error);
       appendLog(`error: ${result.error}`);
       toast({ tone: 'error', title: 'Failed to create worktree', description: result.error });
@@ -761,6 +776,7 @@ export function App() {
         onPathChange={handleNewWorktreePathChange}
         onPathSuggestionSelect={handleWorktreePathSuggestionSelect}
         onCreate={() => void createNewWorktree()}
+        onCreateAndOpen={() => void createNewWorktree({ openAfterCreate: true })}
       />
       <CommandPalette open={isCommandOpen} items={commandItems} onOpenChange={setIsCommandOpen} onExecute={executeCommand} />
       <ToastHost />
