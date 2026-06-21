@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCreateWorktreeArgs, parseWorktreePorcelain } from './worktree';
+import { buildCreateWorktreeArgs, parseBranchList, parseWorktreePorcelain } from './worktree';
 
 describe('parseWorktreePorcelain', () => {
   it('parses worktree path, branch, and clean status from porcelain output', () => {
@@ -111,5 +111,29 @@ describe('buildCreateWorktreeArgs', () => {
         path: '/repo-feature-a',
       }),
     ).toEqual(['-C', '/repo', 'worktree', 'add', '/repo-feature-a', 'feature/a']);
+  });
+});
+
+describe('parseBranchList', () => {
+  it('parses local and remote branches from formatted git output', () => {
+    const output = [
+      'main\tmain\tlocal',
+      'feature/login\tfeature/login\tlocal',
+      'remotes/origin/main\tmain\tremote',
+      'remotes/origin/feature/search\tfeature/search\tremote',
+    ].join('\n');
+
+    expect(parseBranchList(output)).toEqual([
+      { name: 'main', label: 'main', remote: null, isRemote: false },
+      { name: 'feature/login', label: 'feature/login', remote: null, isRemote: false },
+      { name: 'origin/main', label: 'origin/main', remote: 'origin', isRemote: true },
+      { name: 'origin/feature/search', label: 'origin/feature/search', remote: 'origin', isRemote: true },
+    ]);
+  });
+
+  it('skips remote HEAD aliases and blank lines', () => {
+    const output = ['remotes/origin/HEAD\torigin/main\tremote', '', 'main\tmain\tlocal'].join('\n');
+
+    expect(parseBranchList(output)).toEqual([{ name: 'main', label: 'main', remote: null, isRemote: false }]);
   });
 });

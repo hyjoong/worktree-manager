@@ -1,7 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { Check, ChevronDown, ChevronRight, GitBranchPlus } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, GitBranchPlus, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import type { CreateWorktreeMode } from '../../shared/ipc';
+import type { BranchInfo, CreateWorktreeMode } from '../../shared/ipc';
 import { suggestWorktreePathOptions, type WorktreePathSuggestion } from '../lib/worktree-path';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -11,6 +11,8 @@ type CreateWorktreeDialogProps = {
   mode: CreateWorktreeMode;
   projectPath: string;
   branch: string;
+  branches: BranchInfo[];
+  isBranchLoading: boolean;
   path: string;
   isLoading: boolean;
   onOpenChange(open: boolean): void;
@@ -26,6 +28,8 @@ export function CreateWorktreeDialog({
   mode,
   projectPath,
   branch,
+  branches,
+  isBranchLoading,
   path,
   isLoading,
   onOpenChange,
@@ -36,12 +40,23 @@ export function CreateWorktreeDialog({
   onCreate,
 }: CreateWorktreeDialogProps) {
   const [isCustomPathOpen, setIsCustomPathOpen] = useState(false);
+  const [branchQuery, setBranchQuery] = useState('');
   const isNewBranchMode = mode === 'new';
   const pathSuggestions = useMemo(() => suggestWorktreePathOptions(projectPath, branch), [branch, projectPath]);
+  const filteredBranches = useMemo(() => {
+    const normalizedQuery = branchQuery.trim().toLowerCase();
+
+    if (normalizedQuery.length === 0) {
+      return branches.slice(0, 8);
+    }
+
+    return branches.filter((candidate) => candidate.label.toLowerCase().includes(normalizedQuery)).slice(0, 8);
+  }, [branchQuery, branches]);
 
   useEffect(() => {
     if (!open) {
       setIsCustomPathOpen(false);
+      setBranchQuery('');
     }
   }, [open]);
 
@@ -76,11 +91,22 @@ export function CreateWorktreeDialog({
           <div className="mt-3 grid gap-3">
             <label className="grid gap-1.5 text-xs font-medium">
               {isNewBranchMode ? 'New branch name' : 'Existing branch name'}
-              <Input
-                value={branch}
-                onChange={(event) => onBranchChange(event.currentTarget.value)}
-                placeholder={isNewBranchMode ? 'feature/new-work' : 'feature/existing-work'}
-              />
+              {isNewBranchMode ? (
+                <Input
+                  value={branch}
+                  onChange={(event) => onBranchChange(event.currentTarget.value)}
+                  placeholder="feature/new-work"
+                />
+              ) : (
+                <BranchPicker
+                  branches={filteredBranches}
+                  branch={branch}
+                  query={branchQuery}
+                  isLoading={isBranchLoading}
+                  onQueryChange={setBranchQuery}
+                  onBranchSelect={onBranchChange}
+                />
+              )}
             </label>
 
             <div className="grid gap-1.5 text-xs font-medium">
@@ -134,6 +160,68 @@ export function CreateWorktreeDialog({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+function BranchPicker({
+  branches,
+  branch,
+  query,
+  isLoading,
+  onQueryChange,
+  onBranchSelect,
+}: {
+  branches: BranchInfo[];
+  branch: string;
+  query: string;
+  isLoading: boolean;
+  onQueryChange(query: string): void;
+  onBranchSelect(branch: string): void;
+}) {
+  return (
+    <div className="grid gap-1.5">
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/70" />
+        <Input
+          className="pl-7"
+          value={query}
+          onChange={(event) => onQueryChange(event.currentTarget.value)}
+          placeholder="Search local and remote branches"
+        />
+      </div>
+      <div className="max-h-36 overflow-auto rounded-md border border-border bg-card p-1">
+        {isLoading ? (
+          <div className="px-2 py-3 text-[11px] font-normal text-muted-foreground">Loading branches...</div>
+        ) : branches.length === 0 ? (
+          <div className="px-2 py-3 text-[11px] font-normal text-muted-foreground">No matching branches</div>
+        ) : (
+          branches.map((candidate) => (
+            <button
+              key={`${candidate.isRemote ? 'remote' : 'local'}:${candidate.name}`}
+              type="button"
+              className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition ${
+                branch === candidate.name ? 'bg-blue-500/12 text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              }`}
+              onClick={() => onBranchSelect(candidate.name)}
+            >
+              <span
+                className={`flex size-4 shrink-0 items-center justify-center rounded border ${
+                  branch === candidate.name ? 'border-blue-400 bg-blue-500 text-white' : 'border-border bg-background text-transparent'
+                }`}
+              >
+                <Check className="size-3" />
+              </span>
+              <span className="min-w-0 flex-1 truncate font-mono text-[11px] font-normal">{candidate.label}</span>
+              {candidate.isRemote ? (
+                <span className="rounded border border-border bg-background px-1.5 py-0.5 text-[9px] font-medium uppercase text-muted-foreground">
+                  remote
+                </span>
+              ) : null}
+            </button>
+          ))
+        )}
+      </div>
+    </div>
   );
 }
 

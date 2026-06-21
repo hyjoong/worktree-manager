@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const ipcChannels = {
   listWorktrees: 'git:list-worktrees',
+  listBranches: 'git:list-branches',
   openWorktree: 'git:open-worktree',
   removeWorktree: 'git:remove-worktree',
   createWorktree: 'git:create-worktree',
@@ -17,6 +18,10 @@ export const ipcChannels = {
 } as const;
 
 export const listWorktreesInputSchema = z.object({
+  projectPath: z.string().trim().min(1, 'Project path is required'),
+});
+
+export const listBranchesInputSchema = z.object({
   projectPath: z.string().trim().min(1, 'Project path is required'),
 });
 
@@ -55,6 +60,7 @@ export const copyTextInputSchema = z.object({
 });
 
 export type ListWorktreesInput = z.infer<typeof listWorktreesInputSchema>;
+export type ListBranchesInput = z.infer<typeof listBranchesInputSchema>;
 export type OpenWorktreeInput = z.infer<typeof openWorktreeInputSchema>;
 export type RemoveWorktreeInput = z.infer<typeof removeWorktreeInputSchema>;
 export type CreateWorktreeInput = z.infer<typeof createWorktreeInputSchema>;
@@ -98,10 +104,27 @@ export type WorktreeInfo = {
   lastCommit: CommitSummary | null;
 };
 
+export type BranchInfo = {
+  name: string;
+  label: string;
+  remote: string | null;
+  isRemote: boolean;
+};
+
 export type ListWorktreesResult =
   | {
       ok: true;
       worktrees: WorktreeInfo[];
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
+export type ListBranchesResult =
+  | {
+      ok: true;
+      branches: BranchInfo[];
     }
   | {
       ok: false;
@@ -159,6 +182,7 @@ export type AppInfoResult =
 
 export type WorktreeApi = {
   listWorktrees(input: ListWorktreesInput): Promise<ListWorktreesResult>;
+  listBranches(input: ListBranchesInput): Promise<ListBranchesResult>;
   openWorktree(input: OpenWorktreeInput): Promise<MutationResult>;
   removeWorktree(input: RemoveWorktreeInput): Promise<MutationResult>;
   createWorktree(input: CreateWorktreeInput): Promise<MutationResult>;

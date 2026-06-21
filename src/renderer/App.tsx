@@ -24,7 +24,7 @@ import { useEditorStore } from './stores/editor-store';
 import { createRegisteredProject, upsertRecentProject } from './stores/project-store';
 import { useToastStore } from './stores/toast-store';
 import type { RegisteredProject } from './types/project';
-import type { AppInfo, CreateWorktreeMode, EditorId, UpdateStatus, WorktreeInfo } from '../shared/ipc';
+import type { AppInfo, BranchInfo, CreateWorktreeMode, EditorId, UpdateStatus, WorktreeInfo } from '../shared/ipc';
 import { getWorktreeRemovalBlocker } from '../shared/worktree-removal';
 
 export function App() {
@@ -39,6 +39,8 @@ export function App() {
   const [recentCommandIds, setRecentCommandIds] = useState<string[]>([]);
   const [createMode, setCreateMode] = useState<CreateWorktreeMode>('new');
   const [newBranch, setNewBranch] = useState('');
+  const [branches, setBranches] = useState<BranchInfo[]>([]);
+  const [isBranchLoading, setIsBranchLoading] = useState(false);
   const [newWorktreePath, setNewWorktreePath] = useState('');
   const [isWorktreePathTouched, setIsWorktreePathTouched] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ phase: 'idle', message: 'Check for updates' });
@@ -199,6 +201,37 @@ export function App() {
       toast({ tone: 'error', title: 'Failed to list worktrees', description: message });
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function loadBranches(project: RegisteredProject) {
+    const api = readWorktreeApi();
+
+    if (api === null) {
+      return;
+    }
+
+    setIsBranchLoading(true);
+    appendLog(`$ git -C ${project.path} branch --all`);
+
+    try {
+      const result = await api.listBranches({ projectPath: project.path });
+
+      if (result.ok) {
+        setBranches(result.branches);
+        appendLog(`listed ${result.branches.length} branches`);
+      } else {
+        setBranches([]);
+        appendLog(`error: ${result.error}`);
+        toast({ tone: 'error', title: 'Failed to list branches', description: result.error });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to list branches';
+      setBranches([]);
+      appendLog(`error: ${message}`);
+      toast({ tone: 'error', title: 'Failed to list branches', description: message });
+    } finally {
+      setIsBranchLoading(false);
     }
   }
 
@@ -454,6 +487,10 @@ export function App() {
     if (activeProject !== null && newBranch.trim().length > 0) {
       setNewWorktreePath(suggestWorktreePath(activeProject.path, newBranch));
     }
+
+    if (activeProject !== null) {
+      void loadBranches(activeProject);
+    }
   }
 
   function handleCreateDialogOpenChange(open: boolean) {
@@ -462,8 +499,20 @@ export function App() {
     if (!open) {
       setNewBranch('');
       setNewWorktreePath('');
+      setBranches([]);
       setCreateMode('new');
       setIsWorktreePathTouched(false);
+    }
+  }
+
+  function handleCreateModeChange(mode: CreateWorktreeMode) {
+    setCreateMode(mode);
+    setNewBranch('');
+    setNewWorktreePath('');
+    setIsWorktreePathTouched(false);
+
+    if (mode === 'existing' && activeProject !== null && branches.length === 0) {
+      void loadBranches(activeProject);
     }
   }
 
@@ -702,10 +751,12 @@ export function App() {
         mode={createMode}
         projectPath={activeProject?.path ?? ''}
         branch={newBranch}
+        branches={branches}
+        isBranchLoading={isBranchLoading}
         path={newWorktreePath}
         isLoading={isLoading}
         onOpenChange={handleCreateDialogOpenChange}
-        onModeChange={setCreateMode}
+        onModeChange={handleCreateModeChange}
         onBranchChange={handleNewBranchChange}
         onPathChange={handleNewWorktreePathChange}
         onPathSuggestionSelect={handleWorktreePathSuggestionSelect}

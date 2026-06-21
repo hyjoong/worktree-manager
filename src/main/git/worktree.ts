@@ -1,5 +1,5 @@
 import { execa } from 'execa';
-import type { CommitSummary, CreateWorktreeInput, OpenWorktreeInput, WorktreeInfo, WorktreeStatus } from '../../shared/ipc';
+import type { BranchInfo, CommitSummary, CreateWorktreeInput, OpenWorktreeInput, WorktreeInfo, WorktreeStatus } from '../../shared/ipc';
 import { getWorktreeRemovalBlocker } from '../../shared/worktree-removal';
 
 type MutableWorktree = {
@@ -102,6 +102,43 @@ export async function listWorktrees(projectPath: string): Promise<WorktreeInfo[]
       };
     }),
   );
+}
+
+export async function listBranches(projectPath: string): Promise<BranchInfo[]> {
+  const { stdout } = await execa('git', [
+    '-C',
+    projectPath,
+    'branch',
+    '--all',
+    '--format=%(refname:short)%09%(upstream:short)',
+  ]);
+  return parseBranchList(stdout);
+}
+
+export function parseBranchList(output: string): BranchInfo[] {
+  return output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => {
+      const [rawName = '', _upstream = '', kind = ''] = line.split('\t');
+      const isRemote = rawName.startsWith('remotes/');
+      const remoteName = isRemote ? rawName.replace(/^remotes\//, '') : rawName;
+
+      if (isRemote && /\/HEAD$/.test(remoteName)) {
+        return null;
+      }
+
+      const [remote] = remoteName.split('/');
+
+      return {
+        name: remoteName,
+        label: remoteName,
+        remote: isRemote ? (remote ?? null) : null,
+        isRemote: isRemote || kind === 'remote',
+      } satisfies BranchInfo;
+    })
+    .filter((branch): branch is BranchInfo => branch !== null);
 }
 
 export async function validateProjectPath(projectPath: string): Promise<string> {

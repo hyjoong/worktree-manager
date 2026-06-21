@@ -5,6 +5,7 @@ import {
   copyTextInputSchema,
   createWorktreeInputSchema,
   ipcChannels,
+  listBranchesInputSchema,
   listWorktreesInputSchema,
   openWorktreeInputSchema,
   removeWorktreeInputSchema,
@@ -12,7 +13,7 @@ import {
   validateProjectInputSchema,
   type SelectProjectDirectoryResult,
 } from '../shared/ipc';
-import { createWorktree, listWorktrees, openWorktree, removeWorktree, validateProjectPath } from './git/worktree';
+import { createWorktree, listBranches, listWorktrees, openWorktree, removeWorktree, validateProjectPath } from './git/worktree';
 import { handleValidatedIpc } from './ipc/handle';
 import { assertAllowedIpcSender, isAllowedRendererUrl } from './security';
 import { loadProjects, saveProjects } from './settings/projects';
@@ -77,6 +78,13 @@ handleValidatedIpc(ipcChannels.listWorktrees, listWorktreesInputSchema, async (i
   return {
     ok: true,
     worktrees: await listWorktrees(input.projectPath),
+  };
+});
+
+handleValidatedIpc(ipcChannels.listBranches, listBranchesInputSchema, async (input) => {
+  return {
+    ok: true,
+    branches: await listBranches(input.projectPath),
   };
 });
 

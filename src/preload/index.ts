@@ -3,6 +3,7 @@ import {
   copyTextInputSchema,
   createWorktreeInputSchema,
   ipcChannels,
+  listBranchesInputSchema,
   listWorktreesInputSchema,
   openWorktreeInputSchema,
   removeWorktreeInputSchema,
@@ -16,6 +17,10 @@ const worktreeApi: WorktreeApi = {
   listWorktrees(input) {
     const parsed = listWorktreesInputSchema.parse(input);
     return ipcRenderer.invoke(ipcChannels.listWorktrees, parsed);
+  },
+  listBranches(input) {
+    const parsed = listBranchesInputSchema.parse(input);
+    return ipcRenderer.invoke(ipcChannels.listBranches, parsed);
   },
   openWorktree(input) {
     const parsed = openWorktreeInputSchema.parse(input);
