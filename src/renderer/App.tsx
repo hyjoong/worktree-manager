@@ -480,6 +480,11 @@ export function App() {
     setNewWorktreePath(path);
   }
 
+  function handleWorktreePathSuggestionSelect(path: string) {
+    setIsWorktreePathTouched(false);
+    setNewWorktreePath(path);
+  }
+
   function executeCommand(item: CommandItem) {
     if (item.disabled === true) {
       return;
@@ -695,6 +700,7 @@ export function App() {
       <CreateWorktreeDialog
         open={isCreateOpen}
         mode={createMode}
+        projectPath={activeProject?.path ?? ''}
         branch={newBranch}
         path={newWorktreePath}
         isLoading={isLoading}
@@ -702,6 +708,7 @@ export function App() {
         onModeChange={setCreateMode}
         onBranchChange={handleNewBranchChange}
         onPathChange={handleNewWorktreePathChange}
+        onPathSuggestionSelect={handleWorktreePathSuggestionSelect}
         onCreate={() => void createNewWorktree()}
       />
       <CommandPalette open={isCommandOpen} items={commandItems} onOpenChange={setIsCommandOpen} onExecute={executeCommand} />
