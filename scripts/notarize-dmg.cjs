@@ -64,6 +64,22 @@ function run(args) {
   }
 }
 
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+// stapler가 dmg 쓰기를 끝낸 뒤에도 디스크 반영이 살짝 지연될 수 있어,
+// 파일 크기가 더 변하지 않을 때까지 기다린 뒤 해시를 계산한다.
+function waitUntilStable(filePath) {
+  let prev = -1;
+  let cur = statSync(filePath).size;
+  while (cur !== prev) {
+    prev = cur;
+    sleepSync(500);
+    cur = statSync(filePath).size;
+  }
+}
+
 function sha512Base64(filePath) {
   return createHash("sha512").update(readFileSync(filePath)).digest("base64");
 }
@@ -110,6 +126,8 @@ exports.default = async function notarizeDmg(context) {
     run(["notarytool", "submit", dmg, ...authArgs, "--wait"]);
     console.log(`[notarize-dmg] stapler staple: ${dmg}`);
     run(["stapler", "staple", dmg]);
+    run(["stapler", "validate", dmg]);
+    waitUntilStable(dmg);
     for (const yml of ymls) updateLatestYml(yml, dmg);
   }
 };
