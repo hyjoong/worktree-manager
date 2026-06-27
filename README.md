@@ -82,6 +82,21 @@ pnpm icon:mac
 
 ## 배포 메모
 
+### 공증 자격증명 (한 번만 설정)
+
+`.env.release.example`를 `.env.release`로 복사하고 값을 채웁니다. 앱 암호는
+[appleid.apple.com](https://appleid.apple.com)의 "앱 암호(App-Specific Password)"에서 발급합니다.
+
+```bash
+cp .env.release.example .env.release
+# .env.release 를 열어 APPLE_APP_SPECIFIC_PASSWORD 값을 채웁니다
+```
+
+`.env.release`는 git에 올라가지 않으며, `pnpm dist:mac` / `dist:publish`가 자동으로 읽습니다.
+같은 자격증명으로 `electron-builder`가 .app을 공증하고,
+`afterAllArtifactBuild` hook(`scripts/notarize-dmg.cjs`)이 DMG까지 공증·스테이플합니다.
+이 값이 없으면 DMG 공증은 건너뛰며, 사용자가 DMG를 열 때 macOS 보안 경고가 표시됩니다.
+
 macOS 배포 파일 생성:
 
 ```bash

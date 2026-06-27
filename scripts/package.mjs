@@ -62,6 +62,30 @@ function findPnpmCommand() {
   };
 }
 
+// 공증 자격증명을 매번 export 하지 않도록, gitignore되는 .env.release를 자동으로 읽는다.
+// (KEY=VALUE 한 줄씩, 이미 셸에 설정된 값은 덮어쓰지 않음)
+function loadReleaseEnv() {
+  const envPath = join(process.cwd(), ".env.release");
+  if (!existsSync(envPath)) return;
+  for (const rawLine of readFileSync(envPath, "utf8").split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (!(key in process.env)) process.env[key] = value;
+  }
+}
+
+loadReleaseEnv();
+
 const pnpm = findPnpmCommand();
 
 const isUnsignedBuild = process.env.WORKTREE_MANAGER_UNSIGNED === "1";

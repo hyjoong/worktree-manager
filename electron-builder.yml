@@ -8,6 +8,7 @@ extraMetadata:
   dependencies: {}
 directories:
   output: release/${version}
+afterAllArtifactBuild: scripts/notarize-dmg.cjs
 files:
   - package.json
   - dist/main/**
