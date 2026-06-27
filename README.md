@@ -33,9 +33,9 @@
 
 https://github.com/hyjoong/worktree-manager/releases/latest
 
-현재 배포 대상은 macOS Apple Silicon입니다. 처음 설치할 때는 `dmg` 파일을 사용하면 됩니다.
+현재 배포 대상은 macOS Apple Silicon입니다. 처음 설치할 때는 `dmg` 파일을 받아 앱을 `Applications`로 드래그하면 됩니다.
 
-v0.1.8 이후 배포 빌드는 Apple Developer ID signing과 notarization을 적용합니다. 이전 unsigned 빌드는 처음 실행할 때 macOS 보안 경고가 표시될 수 있습니다.
+배포 빌드는 앱과 DMG 모두 Apple Developer ID로 서명·공증(notarization)되어 있어, 다운로드한 DMG를 열 때 macOS 보안 경고가 표시되지 않습니다. (구버전 unsigned 빌드는 경고가 뜰 수 있습니다.)
 
 ## 요구사항
 
