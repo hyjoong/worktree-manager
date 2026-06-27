@@ -10,6 +10,15 @@ export type KeyboardShortcut = {
   handler(event: KeyboardEvent): void;
 };
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName;
+  return tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || target.isContentEditable;
+}
+
 export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -28,6 +37,14 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
       });
 
       if (shortcut === undefined) {
+        return;
+      }
+
+      // Let bare-key shortcuts (e.g. j/k/n/Enter) fall through to text fields the
+      // user is typing into. Modifier-based shortcuts (⌘K) still fire everywhere.
+      const usesModifier = (shortcut.meta ?? false) || (shortcut.ctrl ?? false) || (shortcut.alt ?? false);
+
+      if (!usesModifier && isEditableTarget(event.target)) {
         return;
       }
 

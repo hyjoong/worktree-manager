@@ -1,4 +1,4 @@
-import { DragEvent, useEffect, useMemo, useState } from 'react';
+import { DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { CircleAlert, GitBranch, GitBranchPlus, RefreshCw, Search } from 'lucide-react';
 import { CommandPalette } from './components/CommandPalette';
 import { ConfirmDialog } from './components/ConfirmDialog';
@@ -74,13 +74,93 @@ export function App() {
     [activeProject, editor, projects, recentCommandIds, selectedWorktree, worktrees],
   );
 
+  const listScrollRef = useRef<HTMLDivElement | null>(null);
+  const isModalOpen = isCreateOpen || isCommandOpen || pendingRemove !== null;
+
+  function moveSelection(delta: number) {
+    if (worktrees.length === 0) {
+      return;
+    }
+
+    const currentIndex = worktrees.findIndex((worktree) => worktree.path === selectedWorktree?.path);
+    const baseIndex = currentIndex === -1 ? 0 : currentIndex;
+    const nextIndex = Math.min(Math.max(baseIndex + delta, 0), worktrees.length - 1);
+    const next = worktrees[nextIndex];
+
+    if (next !== undefined) {
+      setSelectedPath(next.path);
+      setDetailsView('worktree');
+    }
+  }
+
+  function requestRemoveSelected() {
+    if (selectedWorktree === null) {
+      return;
+    }
+
+    const blocker = getWorktreeRemovalBlocker(selectedWorktree);
+
+    if (blocker !== null) {
+      toast({ tone: 'error', title: 'Cannot remove worktree', description: blocker });
+      return;
+    }
+
+    setPendingRemove(selectedWorktree);
+  }
+
   useKeyboardShortcuts([
     {
       key: 'k',
       meta: true,
       handler: () => setIsCommandOpen((open) => !open),
     },
+    { key: 'arrowdown', enabled: !isModalOpen, handler: () => moveSelection(1) },
+    { key: 'j', enabled: !isModalOpen, handler: () => moveSelection(1) },
+    { key: 'arrowup', enabled: !isModalOpen, handler: () => moveSelection(-1) },
+    { key: 'k', enabled: !isModalOpen, handler: () => moveSelection(-1) },
+    {
+      key: 'enter',
+      enabled: !isModalOpen,
+      handler: () => {
+        if (selectedWorktree !== null) {
+          void openInEditor(selectedWorktree);
+        }
+      },
+    },
+    {
+      key: 'o',
+      enabled: !isModalOpen,
+      handler: () => {
+        if (selectedWorktree !== null) {
+          void openInEditor(selectedWorktree);
+        }
+      },
+    },
+    {
+      key: 'n',
+      enabled: !isModalOpen && activeProject !== null && !isLoading,
+      handler: openCreateWorktreeDialog,
+    },
+    {
+      key: 'r',
+      enabled: !isModalOpen && activeProject !== null && !isLoading,
+      handler: () => {
+        if (activeProject !== null) {
+          void loadWorktrees(activeProject);
+        }
+      },
+    },
+    { key: 'backspace', enabled: !isModalOpen, handler: requestRemoveSelected },
   ]);
+
+  useEffect(() => {
+    if (selectedPath === null || listScrollRef.current === null) {
+      return;
+    }
+
+    const selectedCard = listScrollRef.current.querySelector(`[data-worktree-path="${CSS.escape(selectedPath)}"]`);
+    selectedCard?.scrollIntoView({ block: 'nearest' });
+  }, [selectedPath]);
 
   useEffect(() => {
     const api = readWorktreeApi();
@@ -663,7 +743,7 @@ export function App() {
                     void loadWorktrees(activeProject);
                   }
                 }}
-                title="Refresh worktrees"
+                title="Refresh worktrees (R)"
               >
                 <RefreshCw className={`size-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
@@ -673,6 +753,7 @@ export function App() {
                 className="h-7 border-transparent px-2 text-[11px] hover:bg-accent"
                 disabled={activeProject === null || isLoading}
                 onClick={openCreateWorktreeDialog}
+                title="Create worktree (N)"
               >
                 <GitBranchPlus className="size-3.5" />
                 New
@@ -683,7 +764,7 @@ export function App() {
           </div>
         </header>
 
-        <div className="h-[calc(100%-2.5rem)] overflow-auto p-1.5">
+        <div ref={listScrollRef} className="h-[calc(100%-2.5rem)] overflow-auto p-1.5">
           {error !== null ? (
             <Card className="mb-2 border-destructive/35 bg-destructive/10">
               <CardContent className="flex items-start gap-2 p-3 text-xs text-destructive">

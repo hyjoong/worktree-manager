@@ -64,8 +64,13 @@ export function DetailsPanel({
               <GitBranch className="size-4 text-blue-400" />
               <h2 className="truncate text-sm font-semibold">{worktree.branch ?? 'Detached worktree'}</h2>
             </div>
-            <div className="mt-1">
+            <div className="mt-1 flex items-center gap-1.5">
               <Badge variant={worktree.isDirty ? 'dirty' : 'clean'}>{worktree.isDirty ? 'dirty' : 'clean'}</Badge>
+              {worktree.isMain ? (
+                <Badge variant="default" className="border-blue-400/35 bg-blue-500/12 text-blue-300">
+                  main
+                </Badge>
+              ) : null}
             </div>
           </div>
           <Button type="button" variant="outline" size="sm" onClick={() => onOpen(worktree)}>
