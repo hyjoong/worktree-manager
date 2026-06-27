@@ -768,6 +768,7 @@ export function App() {
         branch={newBranch}
         branches={branches}
         isBranchLoading={isBranchLoading}
+        worktrees={worktrees}
         path={newWorktreePath}
         isLoading={isLoading}
         onOpenChange={handleCreateDialogOpenChange}

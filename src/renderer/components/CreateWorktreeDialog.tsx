@@ -1,7 +1,8 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { Check, ChevronDown, ChevronRight, GitBranchPlus, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import type { BranchInfo, CreateWorktreeMode } from '../../shared/ipc';
+import type { BranchInfo, CreateWorktreeMode, WorktreeInfo } from '../../shared/ipc';
+import { getCreateWorktreeBlocker } from '../lib/create-worktree-conflicts';
 import { suggestWorktreePathOptions, type WorktreePathSuggestion } from '../lib/worktree-path';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -13,6 +14,7 @@ type CreateWorktreeDialogProps = {
   branch: string;
   branches: BranchInfo[];
   isBranchLoading: boolean;
+  worktrees: WorktreeInfo[];
   path: string;
   isLoading: boolean;
   onOpenChange(open: boolean): void;
@@ -31,6 +33,7 @@ export function CreateWorktreeDialog({
   branch,
   branches,
   isBranchLoading,
+  worktrees,
   path,
   isLoading,
   onOpenChange,
@@ -44,7 +47,8 @@ export function CreateWorktreeDialog({
   const [isCustomPathOpen, setIsCustomPathOpen] = useState(false);
   const [branchQuery, setBranchQuery] = useState('');
   const isNewBranchMode = mode === 'new';
-  const isCreateDisabled = isLoading || branch.trim().length === 0 || path.trim().length === 0;
+  const createBlocker = getCreateWorktreeBlocker({ branch, path, worktrees });
+  const isCreateDisabled = isLoading || branch.trim().length === 0 || path.trim().length === 0 || createBlocker !== null;
   const pathSuggestions = useMemo(() => suggestWorktreePathOptions(projectPath, branch), [branch, projectPath]);
   const filteredBranches = useMemo(() => {
     const normalizedQuery = branchQuery.trim().toLowerCase();
@@ -148,6 +152,12 @@ export function CreateWorktreeDialog({
                 />
               ) : null}
             </div>
+
+            {createBlocker !== null ? (
+              <div className="rounded-md border border-amber-400/35 bg-amber-400/10 px-2.5 py-2 text-[11px] font-medium leading-5 text-amber-300">
+                {createBlocker}
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-4 flex justify-end gap-2">
